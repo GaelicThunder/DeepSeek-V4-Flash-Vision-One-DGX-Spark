@@ -1,0 +1,12 @@
+  count run0  gen=440  ttft=0.555s pre= 528.4 t/s  dec= 36.03 t/s  tau=3.259  steps/s=11.08  fin=stop
+  count run1  gen=440  ttft=0.569s pre= 514.8 t/s  dec= 37.35 t/s  tau=3.385  steps/s=11.06  fin=stop
+  count run2  gen=440  ttft=0.593s pre= 494.3 t/s  dec= 34.96 t/s  tau=3.165  steps/s=11.07  fin=stop
+  code  run0  gen=600  ttft= 0.64s pre= 511.0 t/s  dec= 34.85 t/s  tau=3.191  steps/s=10.94  fin=length
+  code  run1  gen=600  ttft=0.643s pre= 508.3 t/s  dec= 35.26 t/s  tau=3.226  steps/s=10.95  fin=length
+  code  run2  gen=600  ttft= 0.64s pre= 510.6 t/s  dec= 37.67 t/s  tau=3.454  steps/s=10.94  fin=length
+  prose run0  gen=600  ttft=0.707s pre= 580.0 t/s  dec= 23.99 t/s  tau=2.193  steps/s=10.97  fin=length
+  prose run1  gen=600  ttft=0.698s pre= 587.2 t/s  dec= 23.25 t/s  tau=2.109  steps/s=11.02  fin=length
+  prose run2  gen=600  ttft=0.697s pre= 588.0 t/s  dec= 21.51 t/s  tau=1.951  steps/s=11.02  fin=length
+dsvision-20260903 count dec med=36.03 (34.96-37.35)  tau med=3.259  steps/s med=11.07  prefill med=515  n=3
+dsvision-20260903 code  dec med=35.26 (34.85-37.67)  tau med=3.226  steps/s med=10.94  prefill med=511  n=3
+dsvision-20260903 prose dec med=23.25 (21.51-23.99)  tau med=2.109  steps/s med=11.02  prefill med=587  n=3

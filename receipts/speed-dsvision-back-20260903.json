@@ -1,0 +1,35 @@
+{
+ "base": "http://127.0.0.1:30021",
+ "model": "deepseek-v4-flash-vision-exp",
+ "when": "2026-09-03T15:18:35",
+ "runs": {
+  "code_T0": [
+   {
+    "tok": 300,
+    "prompt_tok": 38,
+    "sec": 9.08,
+    "tps": 33.0
+   },
+   {
+    "tok": 300,
+    "prompt_tok": 38,
+    "sec": 8.96,
+    "tps": 33.5
+   }
+  ],
+  "prose_T1": [
+   {
+    "tok": 300,
+    "prompt_tok": 41,
+    "sec": 17.47,
+    "tps": 17.2
+   },
+   {
+    "tok": 300,
+    "prompt_tok": 41,
+    "sec": 17.87,
+    "tps": 16.8
+   }
+  ]
+ }
+}

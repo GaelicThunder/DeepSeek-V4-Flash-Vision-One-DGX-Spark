@@ -1,0 +1,241 @@
+{
+ "base": "http://127.0.0.1:30021",
+ "model": "deepseek-v4-flash-vision-exp",
+ "thinking": true,
+ "when": "2026-09-03T00:46:23",
+ "items": {
+  "m1": {
+   "cat": "math",
+   "ok": true,
+   "got": "9708",
+   "tok": 137,
+   "sec": 4.6,
+   "finish": "stop"
+  },
+  "m2": {
+   "cat": "math",
+   "ok": true,
+   "got": "9",
+   "tok": 188,
+   "sec": 6.0,
+   "finish": "stop"
+  },
+  "m3": {
+   "cat": "math",
+   "ok": true,
+   "got": "103776",
+   "tok": 216,
+   "sec": 7.5,
+   "finish": "stop"
+  },
+  "m4": {
+   "cat": "math",
+   "ok": true,
+   "got": "3 hours",
+   "tok": 141,
+   "sec": 3.8,
+   "finish": "stop"
+  },
+  "m5": {
+   "cat": "math",
+   "ok": true,
+   "got": "1/8",
+   "tok": 455,
+   "sec": 15.4,
+   "finish": "stop"
+  },
+  "m6": {
+   "cat": "math",
+   "ok": true,
+   "got": "3",
+   "tok": 124,
+   "sec": 3.8,
+   "finish": "stop"
+  },
+  "m7": {
+   "cat": "math",
+   "ok": false,
+   "got": "",
+   "tok": 2400,
+   "sec": 44.3,
+   "finish": "length"
+  },
+  "m8": {
+   "cat": "math",
+   "ok": true,
+   "got": "6",
+   "tok": 126,
+   "sec": 4.5,
+   "finish": "stop"
+  },
+  "m9": {
+   "cat": "math",
+   "ok": true,
+   "got": "12",
+   "tok": 160,
+   "sec": 4.7,
+   "finish": "stop"
+  },
+  "l1": {
+   "cat": "logic",
+   "ok": true,
+   "got": "312211",
+   "tok": 217,
+   "sec": 6.9,
+   "finish": "stop"
+  },
+  "l2": {
+   "cat": "logic",
+   "ok": false,
+   "got": "B is a knave",
+   "tok": 538,
+   "sec": 17.6,
+   "finish": "stop"
+  },
+  "l3": {
+   "cat": "logic",
+   "ok": true,
+   "got": "7.5 degrees",
+   "tok": 216,
+   "sec": 6.4,
+   "finish": "stop"
+  },
+  "l4": {
+   "cat": "logic",
+   "ok": true,
+   "got": "2",
+   "tok": 479,
+   "sec": 17.0,
+   "finish": "stop"
+  },
+  "l5": {
+   "cat": "logic",
+   "ok": true,
+   "got": "56",
+   "tok": 88,
+   "sec": 3.7,
+   "finish": "stop"
+  },
+  "c1": {
+   "cat": "code",
+   "ok": true,
+   "got": "[2, 2, 2]",
+   "tok": 559,
+   "sec": 21.0,
+   "finish": "stop"
+  },
+  "c2": {
+   "cat": "code",
+   "ok": true,
+   "got": "[1, 2]",
+   "tok": 209,
+   "sec": 7.1,
+   "finish": "stop"
+  },
+  "c3": {
+   "cat": "code",
+   "ok": true,
+   "got": "-4 1",
+   "tok": 156,
+   "sec": 5.9,
+   "finish": "stop"
+  },
+  "c4": {
+   "cat": "code",
+   "ok": true,
+   "got": "3 0",
+   "tok": 181,
+   "sec": 5.4,
+   "finish": "stop"
+  },
+  "c5": {
+   "cat": "code",
+   "ok": true,
+   "got": "fdb",
+   "tok": 358,
+   "sec": 13.9,
+   "finish": "stop"
+  },
+  "c6": {
+   "cat": "code",
+   "ok": true,
+   "got": "O(n)",
+   "tok": 78,
+   "sec": 3.1,
+   "finish": "stop"
+  },
+  "c7": {
+   "cat": "code",
+   "ok": true,
+   "got": "True [3, 2, 1]",
+   "tok": 183,
+   "sec": 6.8,
+   "finish": "stop"
+  },
+  "i1": {
+   "cat": "instr",
+   "ok": true,
+   "got": "ANANAB",
+   "tok": 61,
+   "sec": 2.7,
+   "finish": "stop"
+  },
+  "i2": {
+   "cat": "instr",
+   "ok": true,
+   "got": "3",
+   "tok": 110,
+   "sec": 3.3,
+   "finish": "stop"
+  },
+  "i3": {
+   "cat": "instr",
+   "ok": true,
+   "got": "{\"xs\":[2,3,5,7]}",
+   "tok": 100,
+   "sec": 3.3,
+   "finish": "stop"
+  },
+  "k1": {
+   "cat": "know",
+   "ok": true,
+   "got": "Molybdenum",
+   "tok": 35,
+   "sec": 1.6,
+   "finish": "stop"
+  },
+  "k2": {
+   "cat": "know",
+   "ok": true,
+   "got": "1648",
+   "tok": 33,
+   "sec": 1.3,
+   "finish": "stop"
+  },
+  "k3": {
+   "cat": "know",
+   "ok": false,
+   "got": "weber (Wb)",
+   "tok": 42,
+   "sec": 1.8,
+   "finish": "stop"
+  },
+  "k4": {
+   "cat": "know",
+   "ok": true,
+   "got": "Tomasi di Lampedusa",
+   "tok": 132,
+   "sec": 4.6,
+   "finish": "stop"
+  }
+ },
+ "score": {
+  "math": "8/9",
+  "logic": "4/5",
+  "code": "7/7",
+  "instr": "3/3",
+  "know": "3/4",
+  "TOTAL": "25/28"
+ },
+ "total_pct": 89.3
+}

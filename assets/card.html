@@ -1,0 +1,65 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>card</title>
+<style>
+  :root { --bg:#0e1116; --fg:#e6e9ef; --dim:#8b93a3; --line:#252b36; --acc:#7fd3a4; --acc2:#d9b46a; }
+  html,body { margin:0; background:var(--bg); }
+  body { width:1200px; height:675px; color:var(--fg); font-family:"Fira Code","Cascadia Code","DejaVu Sans Mono",monospace;
+         display:flex; flex-direction:column; box-sizing:border-box; padding:56px 64px 44px; position:relative; overflow:hidden; }
+  .kicker { font-size:15px; color:var(--dim); letter-spacing:.06em; }
+  .kicker b { color:var(--acc); font-weight:500; }
+  h1 { margin:14px 0 6px; font-size:46px; font-weight:600; letter-spacing:-.015em; line-height:1.05; }
+  h1 small { font-weight:400; color:var(--dim); font-size:26px; }
+  .sub { font-size:19px; color:#b8bfcc; margin:0 0 30px; }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:0 28px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:22px 0 20px; }
+  .stat .n { font-size:44px; font-weight:600; letter-spacing:-.02em; line-height:1; color:var(--fg); }
+  .stat .n em { font-style:normal; font-size:22px; color:var(--dim); font-weight:400; margin-left:4px; }
+  .stat .l { margin-top:10px; font-size:15px; color:var(--dim); line-height:1.35; }
+  .bottom { display:flex; gap:48px; margin-top:26px; flex:1; align-items:flex-start; }
+  table { border-collapse:collapse; font-size:16px; }
+  th, td { text-align:right; padding:7px 0 7px 26px; white-space:nowrap; }
+  th:first-child, td:first-child { text-align:left; padding-left:0; color:var(--dim); }
+  thead th { font-weight:400; color:var(--dim); font-size:14px; border-bottom:1px solid var(--line); padding-bottom:9px; }
+  thead th.us { color:var(--acc); }
+  td.us { color:var(--fg); font-weight:600; }
+  tbody tr:last-child td { padding-bottom:0; }
+  .note { max-width:380px; font-size:15px; color:#b8bfcc; line-height:1.5; }
+  .note p { margin:0 0 12px; }
+  .note .k { color:var(--acc2); }
+  .foot { display:flex; justify-content:space-between; gap:24px; font-size:13px; color:var(--dim); margin-top:auto; padding-top:18px; border-top:1px solid var(--line); white-space:nowrap; }
+  .foot b { color:#b8bfcc; font-weight:500; }
+</style>
+<body>
+  <div class="kicker">recipe · <b>one NVIDIA DGX Spark</b> · GB10 · 128 GB unified memory · vLLM + sparkinfer</div>
+  <h1>DeepSeek-V4-Flash-Vision <small>EXL3 MixedK · uncensored</small></h1>
+  <p class="sub">text + images + speculative decoding in one process — CUDA graphs on, no image rebuild</p>
+
+  <div class="stats">
+    <div class="stat"><div class="n">245,760</div><div class="l">tokens of context<br>per request</div></div>
+    <div class="stat"><div class="n">986k</div><div class="l">KV pool tokens<br>4.0 full-length requests</div></div>
+    <div class="stat"><div class="n">35<em>tok/s</em></div><div class="l">decode, code, DSpark K5<br>23 tok/s free prose</div></div>
+    <div class="stat"><div class="n">256</div><div class="l">routed experts kept<br>2-bit, six layers 3-bit</div></div>
+  </div>
+
+  <div class="bottom">
+    <table>
+      <thead><tr><th>same 251 MMLU-Pro items, same grading</th><th class="us">2-bit · 256 experts</th><th>3-bit · 216 experts</th></tr></thead>
+      <tbody>
+        <tr><td>MMLU-Pro, letter logprob, 2 orders</td><td class="us">64.3 %</td><td>60.8 %</td></tr>
+        <tr><td>MATH-500 level 5</td><td class="us">50 / 60</td><td>50 / 60</td></tr>
+        <tr><td>needle 4k · 32k · 131k</td><td class="us">9 / 9</td><td>9 / 9</td></tr>
+        <tr><td>perplexity, 8 passages</td><td class="us">4.54</td><td>5.37</td></tr>
+        <tr><td>verify steps / s</td><td class="us">11.0</td><td>10.3</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <p><span class="k">Dropping 40 experts costs more than dropping a bit.</span> Paired on 502 decisions, p = 0.079 — not worse is certain, better is at the edge of noise.</p>
+      <p>Port of vLLM PR #54566 onto the sparkinfer image as a read-only overlay: 26 files, 9 incompatibilities, one fatal <span class="k">sorted()</span> in the weight loader.</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span><b>github.com/GaelicThunder/DeepSeek-V4-Flash-Vision-One-DGX-Spark</b></span>
+    <span>measured 2026-09-03 · Apache-2.0 · on MiaAI-Lab · 0xSero · vcruz305</span>
+  </div>
+</body>

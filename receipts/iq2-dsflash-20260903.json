@@ -1,0 +1,241 @@
+{
+ "base": "http://127.0.0.1:30021",
+ "model": "deepseek-v4-flash-0731",
+ "thinking": true,
+ "when": "2026-09-03T00:52:37",
+ "items": {
+  "m1": {
+   "cat": "math",
+   "ok": true,
+   "got": "9708",
+   "tok": 68,
+   "sec": 2.4,
+   "finish": "stop"
+  },
+  "m2": {
+   "cat": "math",
+   "ok": true,
+   "got": "9",
+   "tok": 148,
+   "sec": 4.9,
+   "finish": "stop"
+  },
+  "m3": {
+   "cat": "math",
+   "ok": true,
+   "got": "103776",
+   "tok": 124,
+   "sec": 3.6,
+   "finish": "stop"
+  },
+  "m4": {
+   "cat": "math",
+   "ok": true,
+   "got": "3",
+   "tok": 89,
+   "sec": 2.8,
+   "finish": "stop"
+  },
+  "m5": {
+   "cat": "math",
+   "ok": true,
+   "got": "1/8",
+   "tok": 334,
+   "sec": 11.0,
+   "finish": "stop"
+  },
+  "m6": {
+   "cat": "math",
+   "ok": true,
+   "got": "3",
+   "tok": 185,
+   "sec": 6.3,
+   "finish": "stop"
+  },
+  "m7": {
+   "cat": "math",
+   "ok": true,
+   "got": "60",
+   "tok": 341,
+   "sec": 11.0,
+   "finish": "stop"
+  },
+  "m8": {
+   "cat": "math",
+   "ok": true,
+   "got": "6",
+   "tok": 68,
+   "sec": 2.9,
+   "finish": "stop"
+  },
+  "m9": {
+   "cat": "math",
+   "ok": true,
+   "got": "12",
+   "tok": 92,
+   "sec": 3.0,
+   "finish": "stop"
+  },
+  "l1": {
+   "cat": "logic",
+   "ok": true,
+   "got": "312211",
+   "tok": 183,
+   "sec": 4.9,
+   "finish": "stop"
+  },
+  "l2": {
+   "cat": "logic",
+   "ok": true,
+   "got": "knave",
+   "tok": 600,
+   "sec": 20.4,
+   "finish": "stop"
+  },
+  "l3": {
+   "cat": "logic",
+   "ok": true,
+   "got": "7.5",
+   "tok": 118,
+   "sec": 3.9,
+   "finish": "stop"
+  },
+  "l4": {
+   "cat": "logic",
+   "ok": true,
+   "got": "2",
+   "tok": 260,
+   "sec": 9.1,
+   "finish": "stop"
+  },
+  "l5": {
+   "cat": "logic",
+   "ok": true,
+   "got": "56",
+   "tok": 43,
+   "sec": 2.1,
+   "finish": "stop"
+  },
+  "c1": {
+   "cat": "code",
+   "ok": true,
+   "got": "[2, 2, 2]",
+   "tok": 120,
+   "sec": 4.0,
+   "finish": "stop"
+  },
+  "c2": {
+   "cat": "code",
+   "ok": true,
+   "got": "[1, 2]",
+   "tok": 114,
+   "sec": 4.1,
+   "finish": "stop"
+  },
+  "c3": {
+   "cat": "code",
+   "ok": true,
+   "got": "-4 1",
+   "tok": 141,
+   "sec": 5.3,
+   "finish": "stop"
+  },
+  "c4": {
+   "cat": "code",
+   "ok": true,
+   "got": "3 0",
+   "tok": 137,
+   "sec": 5.1,
+   "finish": "stop"
+  },
+  "c5": {
+   "cat": "code",
+   "ok": true,
+   "got": "fdb",
+   "tok": 141,
+   "sec": 6.2,
+   "finish": "stop"
+  },
+  "c6": {
+   "cat": "code",
+   "ok": true,
+   "got": "O(n)",
+   "tok": 101,
+   "sec": 4.2,
+   "finish": "stop"
+  },
+  "c7": {
+   "cat": "code",
+   "ok": true,
+   "got": "True [3, 2, 1]",
+   "tok": 152,
+   "sec": 5.4,
+   "finish": "stop"
+  },
+  "i1": {
+   "cat": "instr",
+   "ok": true,
+   "got": "ANANAB",
+   "tok": 62,
+   "sec": 2.8,
+   "finish": "stop"
+  },
+  "i2": {
+   "cat": "instr",
+   "ok": true,
+   "got": "3",
+   "tok": 152,
+   "sec": 4.9,
+   "finish": "stop"
+  },
+  "i3": {
+   "cat": "instr",
+   "ok": true,
+   "got": "{\"xs\":[2,3,5,7]}",
+   "tok": 148,
+   "sec": 4.3,
+   "finish": "stop"
+  },
+  "k1": {
+   "cat": "know",
+   "ok": true,
+   "got": "Molybdenum",
+   "tok": 35,
+   "sec": 1.4,
+   "finish": "stop"
+  },
+  "k2": {
+   "cat": "know",
+   "ok": true,
+   "got": "1648",
+   "tok": 27,
+   "sec": 1.2,
+   "finish": "stop"
+  },
+  "k3": {
+   "cat": "know",
+   "ok": true,
+   "got": "weber (Wb)",
+   "tok": 43,
+   "sec": 2.0,
+   "finish": "stop"
+  },
+  "k4": {
+   "cat": "know",
+   "ok": false,
+   "got": "",
+   "tok": 2400,
+   "sec": 53.5,
+   "finish": "length"
+  }
+ },
+ "score": {
+  "math": "9/9",
+  "logic": "5/5",
+  "code": "7/7",
+  "instr": "3/3",
+  "know": "3/4",
+  "TOTAL": "27/28"
+ },
+ "total_pct": 96.4
+}

@@ -1,0 +1,24 @@
+DeepSeek-V4-Flash-Vision-One-DGX-Spark
+Copyright 2026 GaelicThunder
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This repository contains modified copies of source files from:
+
+  * vLLM (https://github.com/vllm-project/vllm), Apache-2.0,
+    "Copyright contributors to the vLLM project" — every file under overlay/dsvision/vllm/.
+    The vision support is a port of vllm-project/vllm pull request #54566
+    (merge commit 1356635d837c4ef002ec98c1a0296e7ff60be3c1) onto the vLLM fork shipped in the
+    NVIDIA 26.02 container used by the 0xSero sparkinfer image.
+
+  * sparkinfer, as shipped in ghcr.io/0xsero/deepseek-v4-flash-0731-spark-sparkinfer — the files
+    under overlay/dsvision/sparkinfer/ differ from the image only in the trellis bit-width guards
+    (K in {3,4,5,6} -> K in {2,...,6}).
+
+  * MiaAI-Lab/DeepSeek-v4-Flash-One-DGX-Spark, MIT, Copyright (c) 2026 MiaAI-Lab — the files under
+    third_party/MiaAI-Lab-DeepSeek-v4-Flash-One-DGX-Spark/ are verbatim copies at commit
+    fdcd538fbf95fb15b2d6850db9613d22b2c889b8 (their LICENSE is included there).
+
+Model weights are not part of this repository. The served pack
+(vcruz305/DSV4-Flash-Vision-ablit-EXL3-MixedK) is distributed under the DeepSeek model license
+plus its own responsible-use terms; see the model card.

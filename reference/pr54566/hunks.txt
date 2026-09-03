@@ -1,0 +1,404 @@
+=== tests/models/registry.py
+@@ -833,6 +833,9 @@ def check_available_online(
+     "DeepseekOCR2ForCausalLM": _HfExamplesInfo(
+         "deepseek-ai/DeepSeek-OCR-2",
+     ),
++    "DeepseekV4ForConditionalGeneration": _HfExamplesInfo(
++        "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
++    ),
+     "Dots3NoteForCausalLM": _HfExamplesInfo(
+         "dots-studio/dots3-note-prev",
+         is_available_online=False,
+=== vllm/_custom_ops.py
+@@ -2501,6 +2501,8 @@ def topk_hash_softplus_sqrt(
+     input_tokens: torch.Tensor | None = None,
+     hash_indices_table: torch.Tensor | None = None,
+     is_padding: torch.Tensor | None = None,
++    bias_vl: torch.Tensor | None = None,
++    image_sentinel_lo: int = 0,
+ ) -> None:
+     torch.ops._moe_C.topk_softplus_sqrt(
+         topk_weights,
+@@ -2513,6 +2515,8 @@ def topk_hash_softplus_sqrt(
+         input_tokens,
+         hash_indices_table,
+         is_padding,
++        bias_vl,
++        image_sentinel_lo,
+     )
+ 
+ 
+=== vllm/config/model.py
+@@ -697,7 +697,10 @@ def __post_init__(
+                 self.tokenizer_mode = "kimi_k3"
+             elif arch == "DeepseekV32ForCausalLM":
+                 self.tokenizer_mode = "deepseek_v32"
+-            elif arch == "DeepseekV4ForCausalLM":
++            elif arch in (
++                "DeepseekV4ForCausalLM",
++                "DeepseekV4ForConditionalGeneration",
++            ):
+                 self.tokenizer_mode = "deepseek_v4"
+             elif arch in ("InklingForCausalLM", "InklingForConditionalGeneration"):
+                 self.tokenizer_mode = "inkling"
+=== vllm/model_executor/models/config.py
+@@ -1002,6 +1002,7 @@ def verify_and_update_config(vllm_config: "VllmConfig") -> None:
+     "ColBERTJinaRobertaModel": JinaRobertaModelConfig,
+     "ColQwen3_5": ColQwen3_5Config,
+     "DeepseekV4ForCausalLM": DeepseekV4ForCausalLMConfig,
++    "DeepseekV4ForConditionalGeneration": DeepseekV4ForCausalLMConfig,
+     "DeepseekV32ForCausalLM": DeepseekV32ForCausalLM,
+     "DiffusionGemmaForBlockDiffusion": DiffusionGemmaModelForBlockDiffusionConfig,  # noqa: E501
+     "Ernie4_5_VLMoeForConditionalGeneration": Ernie4_5_VLMoeForConditionalGenerationConfig,  # noqa: E501
+=== vllm/model_executor/models/registry.py
+@@ -362,6 +362,10 @@
+     "DeepseekVLV2ForCausalLM": ("deepseek_vl2", "DeepseekVLV2ForCausalLM"),
+     "DeepseekOCRForCausalLM": ("deepseek_ocr", "DeepseekOCRForCausalLM"),
+     "DeepseekOCR2ForCausalLM": ("deepseek_ocr2", "DeepseekOCR2ForCausalLM"),
++    "DeepseekV4ForConditionalGeneration": (
++        "vllm.models.deepseek_v4",
++        "DeepseekV4ForConditionalGeneration",
++    ),
+     "Dots3NoteForCausalLM": (
+         "vllm.models.dots3_note",
+         "Dots3NoteForCausalLM",
+=== vllm/models/deepseek_v4/__init__.py
+@@ -20,7 +20,13 @@
+     )
+     from .amd.model import DeepseekV4ForCausalLM
+     from .amd.mtp import DeepSeekV4MTP
++    from .vl_stub import (  # type: ignore[assignment]
++        DeepseekV4ForConditionalGeneration,
++    )
+ elif current_platform.is_xpu():
++    from .vl_stub import (  # type: ignore[assignment]
++        DeepseekV4ForConditionalGeneration,
++    )
+     from .xpu.dspark import DSparkDeepseekV4ForCausalLM  # type: ignore[assignment]
+     from .xpu.model import DeepseekV4ForCausalLM  # type: ignore[assignment]
+     from .xpu.mtp import DeepSeekV4MTP  # type: ignore[assignment]
+@@ -30,10 +36,14 @@
+     )
+     from .nvidia.model import DeepseekV4ForCausalLM  # type: ignore[assignment]
+     from .nvidia.mtp import DeepSeekV4MTP  # type: ignore[assignment]
++    from .nvidia.vl_model import (  # type: ignore[assignment]
++        DeepseekV4ForConditionalGeneration,
++    )
+ 
+ __all__ = [
+     "DSparkDeepseekV4ForCausalLM",
+     "DeepSeekV4MTP",
+     "DeepseekV4FP8Config",
+     "DeepseekV4ForCausalLM",
++    "DeepseekV4ForConditionalGeneration",
+ ]
+=== vllm/models/deepseek_v4/attention.py
+@@ -205,6 +205,13 @@ def __init__(
+         self.n_groups = config.o_groups
+         self.n_local_groups = self.n_groups // tp_size
+         self.window_size = config.sliding_window
++        # Vision variant: image spans are visible bidirectionally, widening
++        # prefill SWA index rows by up to max_image_tokens columns.
++        self.max_image_tokens = (
++            getattr(config, "vision_max_n_token", 0)
++            if getattr(config, "vision_n_layers", 0) > 0
++            else 0
++        )
+         # NOTE(zyongye) Compress ratio can't be 0
+         # we do this for because MTP layer is not included
+         # in the compress ratio list
+@@ -363,6 +370,7 @@ def __init__(
+             _COMPUTE_SWA_INDICES_AND_LENS_KERNEL.register_warmup(
+                 window_size=self.window_size,
+                 block_size=self.swa_cache_layer.block_size,
++                max_image_tokens=self.max_image_tokens,
+             )
+ 
+             if self.compress_ratio > 1:
+=== vllm/models/deepseek_v4/nvidia/model.py
+@@ -92,6 +92,8 @@
+ from vllm.v1.attention.backends.registry import AttentionBackendEnum
+ from vllm.v1.worker.ubatching import dbo_current_ubatch_id
+ 
++from ..common.mm_preprocess import IMAGE_SENTINEL_BASE_ID
++
+ logger = init_logger(__name__)
+ 
+ 
+@@ -798,6 +800,12 @@ def __init__(
+ 
+         self.gate.e_score_correction_bias = None
+         self.gate.tid2eid = None
++        self.gate.bias_vl = None
++        # Image tokens borrow five consecutive reserved in-vocab ids starting
++        # at IMAGE_SENTINEL_BASE_ID; 0 disables vision routing (text model).
++        self.image_sentinel_lo = (
++            IMAGE_SENTINEL_BASE_ID if getattr(config, "vision_n_layers", 0) > 0 else 0
++        )
+         is_hash_moe = extract_layer_index(prefix) < config.num_hash_layers
+         self.hash_indices_dtype = torch.int64 if self.use_mega_moe else torch.int32
+         if is_hash_moe:
+@@ -813,12 +821,25 @@ def __init__(
+                 ),
+                 requires_grad=False,
+             )
+-        elif getattr(config, "topk_method", None) == "noaux_tc":
++        if getattr(config, "topk_method", None) == "noaux_tc" and (
++            not is_hash_moe or getattr(config, "vision_n_layers", 0) > 0
++        ):
++            # Vision checkpoints ship a gate bias on hash layers too (it is
++            # unused for routing there; image tokens use bias_vl instead).
+             self.gate.e_score_correction_bias = nn.Parameter(
+                 torch.empty(config.n_routed_experts, dtype=torch.float32),
+                 requires_grad=False,
+             )
+ 
++        if getattr(config, "vision_n_layers", 0) > 0:
++            # Vision checkpoints route image sentinel tokens with bias_vl
++            # instead of e_score_correction_bias / the hash table. Created on
++            # every MoE layer, hash layers included.
++            self.gate.bias_vl = nn.Parameter(
++                torch.empty(config.n_routed_experts, dtype=torch.float32),
++                requires_grad=False,
++            )
++
+         if config.n_shared_experts is None:
+             self.shared_experts = None
+         else:
+@@ -950,6 +971,8 @@ def _init_fused_moe_experts(
+             routed_scaling_factor=self.routed_scaling_factor,
+             e_score_correction_bias=self.gate.e_score_correction_bias,
+             hash_indices_table=self.gate.tid2eid,
++            bias_vl=getattr(self.gate, "bias_vl", None),
++            image_sentinel_lo=self.image_sentinel_lo,
+             swiglu_limit=self.swiglu_limit,
+             router_logits_dtype=torch.float32,
+             enable_eplb=parallel_config.enable_eplb,
+@@ -962,6 +985,10 @@ def forward(
+     ) -> torch.Tensor:
+         if self.gate.tid2eid is not None and input_ids is None:
+             raise ValueError("DeepSeek V4 hash MoE routing requires input_ids.")
++        # getattr for test doubles that fake the gate module.
++        bias_vl = getattr(self.gate, "bias_vl", None)
++        if bias_vl is not None and input_ids is None:
++            raise ValueError("DeepSeek V4 vision MoE routing requires input_ids.")
+ 
+         if not self.use_mega_moe:
+             return self._forward_fused_moe(hidden_states, input_ids)
+@@ -981,6 +1008,8 @@ def forward(
+             input_tokens=input_ids,
+             hash_indices_table=self.gate.tid2eid,
+             routed_scaling_factor=self.routed_scaling_factor,
++            bias_vl=bias_vl.data if bias_vl is not None else None,
++            image_sentinel_lo=self.image_sentinel_lo if bias_vl is not None else 0,
+         )
+         activation_clamp = (
+             float(self.swiglu_limit) if self.swiglu_limit is not None else None
+=== vllm/tokenizers/deepseek_v4_encoding.py
+@@ -28,6 +28,10 @@
+ ASSISTANT_SP_TOKEN = "<｜Assistant｜>"
+ LATEST_REMINDER_SP_TOKEN = "<｜latest_reminder｜>"
+ 
++# Placeholder text inlined at each image's position; the multimodal processor
++# later expands it into the sentinel token block.
++IMAGE_PLACEHOLDER = "<｜deepseek_image｜>"
++
+ # Task special tokens for internal classification tasks
+ DS_TASK_SP_TOKENS = {
+     "action": "<｜action｜>",
+@@ -199,6 +203,30 @@ def find_last_user_index(messages: List[Dict[str, Any]]) -> int:
+ # Message Rendering
+ # ============================================================
+ 
++def flatten_content_blocks(content: Any) -> Any:
++    """Flatten OpenAI-style content blocks to plain text.
++
++    Image blocks are inlined as IMAGE_PLACEHOLDER at their position. The image
++    data itself travels out of band (multi_modal_data) and is matched to
++    placeholders by order. Plain-string content passes through unchanged.
++    """
++    if not isinstance(content, list):
++        return content
++    parts: List[str] = []
++    for block in content:
++        if not isinstance(block, dict):
++            parts.append(str(block))
++        elif block.get("type") in ("image", "image_url"):
++            parts.append(IMAGE_PLACEHOLDER)
++        elif block.get("type") == "text":
++            parts.append(block.get("text", ""))
++        else:
++            raise ValueError(
++                f"Unsupported content block type: {block.get('type')!r}"
++            )
++    return "".join(parts)
++
++
+ def render_message(
+     index: int,
+     messages: List[Dict[str, Any]],
+@@ -292,6 +320,8 @@ def render_message(
+                 block_type = block.get("type")
+                 if block_type == "text":
+                     parts.append(block.get("text", ""))
++                elif block_type in ("image", "image_url"):
++                    parts.append(IMAGE_PLACEHOLDER)
+                 elif block_type == "tool_result":
+                     tool_content = block.get("content", "")
+                     if isinstance(tool_content, list):
+@@ -307,7 +337,7 @@ def render_message(
+                     parts.append(f"[Unsupported {block_type}]")
+             prompt += "\n\n".join(parts)
+         else:
+-            prompt += content or ""
++            prompt += flatten_content_blocks(content) or ""
+ 
+     elif role == "latest_reminder":
+         prompt += LATEST_REMINDER_SP_TOKEN + latest_reminder_msg_template.format(content=content)
+@@ -447,13 +477,15 @@ def merge_tool_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+                     "content_blocks": [tool_block],
+                 })
+         elif role == "user":
+-            text_block = {"type": "text", "text": msg.get("content", "")}
++            # Flatten OpenAI-style content blocks (images become placeholders)
++            text_content = flatten_content_blocks(msg.get("content", ""))
++            text_block = {"type": "text", "text": text_content}
+             if merged and merged[-1].get("role") == "user" and "content_blocks" in merged[-1] and merged[-1].get("task") is None:
+                 merged[-1]["content_blocks"].append(text_block)
+             else:
+                 new_msg = {
+                     "role": "user",
+-                    "content": msg.get("content", ""),
++                    "content": text_content,
+                     "content_blocks": [text_block],
+                 }
+                 # Preserve extra fields (task, wo_eos, mask, etc.)
+=== vllm/transformers_utils/configs/deepseek_v4.py
+@@ -14,10 +14,39 @@ def __init__(
+         rope_scaling: dict[str, Any] | None = None,
+         rope_parameters: dict[str, Any] | None = None,
+         rope_theta: float = 10000.0,
++        vision_n_layers: int = 0,
++        vision_dim: int = 1024,
++        vision_n_heads: int = 16,
++        vision_inter_dim: int = 2816,
++        vision_patch_size: int = 14,
++        vision_rope_theta: float = 10000.0,
++        vision_downsample_ratio: int = 3,
++        vision_max_n_token: int = 384,
++        vision_min_pixels: int = 147456,
++        vision_max_wh_ratio: float = 8,
+         **kwargs,
+     ):
+         self.max_position_embeddings = max_position_embeddings
+         self.rope_scaling = rope_scaling
+         self.rope_theta = rope_theta
+         self.rope_parameters = rope_scaling or rope_parameters
++        # Vision tower config; vision_n_layers == 0 means text-only.
++        self.vision_n_layers = vision_n_layers
++        self.vision_dim = vision_dim
++        self.vision_n_heads = vision_n_heads
++        self.vision_inter_dim = vision_inter_dim
++        self.vision_patch_size = vision_patch_size
++        self.vision_rope_theta = vision_rope_theta
++        self.vision_downsample_ratio = vision_downsample_ratio
++        self.vision_max_n_token = vision_max_n_token
++        self.vision_min_pixels = vision_min_pixels
++        self.vision_max_wh_ratio = vision_max_wh_ratio
++        # The sparse-SWA index kernels widen the window within image spans
++        # in-kernel, so mm-prefix ranges longer than sliding_window must be
++        # kept (they are only consumed by those kernels).
++        self.mm_prefix_clamp_sliding_window = vision_n_layers > 0
++        # The visibility span covers the sentinel block [IMAGE_START,
++        # IMAGE_END]; the mm placeholder additionally carries a leading
++        # compressor-alignment pad (see mm_preprocess.COMPRESS_PAD_TO).
++        self.mm_prefix_span_leading_pad_modulus = 4 if vision_n_layers > 0 else 0
+         super().__init__(**kwargs)
+=== vllm/transformers_utils/model_arch_config_convertor.py
+@@ -579,6 +579,40 @@ def get_num_hidden_layers(self) -> int:
+         return getattr(self.hf_text_config, "num_nextn_predict_layers", 0)
+ 
+ 
++class DeepseekV4ModelArchConfigConvertor(ModelArchConfigConvertorBase):
++    def __init__(
++        self,
++        hf_config: PretrainedConfig,
++        hf_text_config: PretrainedConfig,
++        revision: str | None = None,
++    ):
++        # DeepSeek-V4-Flash-Vision-Exp ships the same architectures/model_type
++        # as the text-only DeepSeek-V4-Flash; route to the VL wrapper class
++        # when the config carries a vision tower. Mutate (not just override
++        # get_architectures) because model-class resolution reads the raw
++        # hf_config.architectures (get_model_architecture).
++        # Only rewrite the stock text architecture: speculative-draft configs
++        # (DSparkDraftModel / DeepSeekV4MTPModel) keep their own classes, and
++        # the VL wrapper marks the config copy it hands to the inner text
++        # backbone with _dsv4_vl_inner so this rewrite does not recurse.
++        if (
++            getattr(hf_config, "vision_n_layers", 0) > 0
++            and getattr(hf_config, "architectures", None) == ["DeepseekV4ForCausalLM"]
++            and not getattr(hf_config, "_dsv4_vl_inner", False)
++        ):
++            hf_config.architectures = ["DeepseekV4ForConditionalGeneration"]
++        super().__init__(hf_config, hf_text_config, revision)
++
++    def is_mm_prefix_lm(self, supports_multimodal: bool = True) -> bool:
++        # The vision variant needs the mm-prefix plumbing: it makes the
++        # scheduler prefill image spans atomically (disable_chunked_mm_input)
++        # and routes per-request image ranges to the sparse-SWA metadata
++        # builder, which widens the sliding window bidirectionally in-kernel.
++        if not supports_multimodal:
++            return False
++        return getattr(self.hf_config, "vision_n_layers", 0) > 0
++
++
+ class MimoMTPModelArchConfigConvertor(ModelArchConfigConvertorBase):
+     def get_num_hidden_layers(self) -> int:
+         return getattr(self.hf_text_config, "num_nextn_predict_layers", 0)
+@@ -775,6 +809,7 @@ def derive_max_model_len_and_key(self) -> tuple[float, str | None]:
+     "cohere_asr": CohereAsrModelArchConfigConvertor,
+     "dbrx": DbrxModelArchConfigConvertor,
+     "deepseek_mtp": DeepSeekMTPModelArchConfigConvertor,
++    "deepseek_v4": DeepseekV4ModelArchConfigConvertor,
+     "diffusion_gemma_text": Gemma4ModelArchConfigConvertor,
+     "ernie_mtp": ErnieMTPModelArchConfigConvertor,
+     "falcon": FalconModelArchConfigConvertor,
+=== vllm/v1/worker/gpu_model_runner.py
+@@ -2429,6 +2429,16 @@ def _get_block_table(kv_cache_gid: int):
+             _bidi_sw = getattr(hf_text_config, "sliding_window", None)
+             _clamps_in_kernel = getattr(
+                 self.model, "mm_prefix_clamp_sliding_window", False
++            ) or getattr(hf_text_config, "mm_prefix_clamp_sliding_window", False)
++            # Some models (DeepSeek-V4 vision) define the bidirectional span
++            # over the whole sentinel block ([IMAGE_START, IMAGE_END]) rather
++            # than the embed tokens, and prepend a position-dependent
++            # alignment pad before the first sentinel. For those, derive the
++            # span from the full placeholder range and strip the pad.
++            # TODO(Isotr0py): Refactor mm_prefix_lm implementation
++            # for better readability and maintainability.
++            _span_pad_modulus = getattr(
++                hf_text_config, "mm_prefix_span_leading_pad_modulus", 0
+             )
+             for req_id in self.input_batch.req_ids:
+                 image_doc_ranges = []
+@@ -2437,7 +2447,18 @@ def _get_block_table(kv_cache_gid: int):
+                     if mm_feature.modality == "audio":
+                         continue
+                     pos_info = mm_feature.mm_position
+-                    img_doc_range = pos_info.extract_embeds_range()
++                    if _span_pad_modulus:
++                        pad = (
++                            _span_pad_modulus - 1 - pos_info.offset % _span_pad_modulus
++                        )
++                        img_doc_range = [
++                            (
++                                pos_info.offset + pad,
++                                pos_info.offset + pos_info.length - 1,
++                            )
++                        ]
++                    else:
++                        img_doc_range = pos_info.extract_embeds_range()
+                     for r in img_doc_range:
+                         if (
+                             not _clamps_in_kernel
