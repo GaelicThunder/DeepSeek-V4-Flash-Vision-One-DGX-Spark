@@ -111,6 +111,26 @@ species, and counts 0 people / 2 animals / 2 objects. 227–392 prompt tokens pe
 re-verified after every reboot in the benchmark chain. Multi-image prompts and tool calls with images have not
 been exercised yet.
 
+### A token the decode path invents: `)Skip`
+
+Roughly once every few thousand tokens this stack glues the token `)Skip` (id 83480) onto the end of a
+clause — *"All 153 tests pass)Skip."* It is not a sampling artifact. Scored through the **prefill** path
+the model gives that token p 0.007 at rank 7; the **decode** path, on the identical prefix, puts it first
+at p 0.65, deterministically, even at temperature 0. Its `head.weight` row is a 2.25× outlier (rank 28 of
+129,280) in this pack *and* in the 3-bit text pack, so it is a property of the released DeepSeek head, and
+a small decode-only perturbation of the hidden state is enough to make it the argmax where the true
+distribution is flat. It also lands inside tool-call arguments and hidden reasoning, so it corrupts files,
+not just prose.
+
+The mitigation costs nothing and needs no restart — add `"bad_words": [")Skip", ",Skip", ".Skip"]` to your
+requests, or put [`scripts/badwords_proxy.py`](scripts/badwords_proxy.py) in front of the engine if your
+client cannot. `top_p`/`top_k` do not help (the token is already rank 1 in the bad row) and `min_p` /
+`logit_bias` are rejected outright under speculative decoding.
+
+Full evidence, the exonerated suspects, the remaining kernel A/B and the detector
+([`tools/token_leak_probe.py`](tools/token_leak_probe.py), which finds this class of fault on any model
+without knowing the token id) are in [`docs/DECODE_PATH_TOKEN_LEAK.md`](docs/DECODE_PATH_TOKEN_LEAK.md).
+
 ## Requirements
 
 - One NVIDIA DGX Spark (GB10 / SM121, 128 GB unified memory). Tested on the ASUS Ascent GX10 build.
@@ -229,14 +249,16 @@ path is different. Multi-image prompts are the case to watch.
 ```
 scripts/      download.sh · convert.sh · serve.sh · stop.sh · vision_probe.py · ppl_probe.py · speed_probe.py
               dsbench.py (speed with τ/α) · bench-ctx.py (salted long-context prefill) · bench/ (MMLU-Pro + MATH-500 harness)
+              badwords_proxy.py (drop-in `bad_words` injector, stdlib only)
 overlay/      the 26 files mounted over the image (this is the port)
 tools/        convert_vision_pack.py · add_vision_tensors.py · make_config.py · make_vision_config.py · use_vision.sh
               verify_tp1.py · apply_k2_patch.py (the K-guard edits as a script) · ref_spec.py · make_draft_plan.py
+              token_leak_probe.py (prefill-vs-decode logits disagreement detector)
 reference/    ref_spec.json (tensor map of the 0xSero tp1 layout, so you don't need that 99 GB checkpoint)
               0xsero-tp1-config.json · draft_plan.json · the produced config-vision.json and bitrates.json · PR #54566 hunks
 third_party/  MiaAI-Lab recipe files, verbatim, with license and commit
 receipts/     every JSON and log behind the numbers above
-docs/         PORT_NOTES.md · CONVERSION.md · BENCHMARK.md
+docs/         PORT_NOTES.md · CONVERSION.md · BENCHMARK.md · DECODE_PATH_TOKEN_LEAK.md
 ```
 
 ## Credits

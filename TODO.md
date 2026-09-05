@@ -1,5 +1,10 @@
 # TODO
 
+- **Close the `)Skip` root cause.** The mask in `scripts/badwords_proxy.py` hides it; it does not fix it. One boot
+  with `MODE=mtp0` says whether the corruption needs the speculative verify block at all, then swap one decode-only
+  kernel at a time (`kv_cache_dtype` off `nvfp4_ds_mla`, the `B12X_MLA_SPARSE` decode path, the small-batch MoE)
+  and re-run `tools/token_leak_probe.py --prefix-text ... --verify-fix` until the decode probability matches the
+  prefill one. Also worth a pass with `VLLM_COMPUTE_NANS_IN_LOGITS=1`.
 - **Retrain the DSpark draft against this target.** τ is 3.2 on code vs 4.1 for the 3-bit recipe with a draft built
   the same way; the engine itself is faster (11.0 vs 10.3 verify steps/s). A draft that has seen the 256-expert 2-bit
   target's distribution should close most of the 35→46 tok/s gap.

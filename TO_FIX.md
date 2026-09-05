@@ -2,6 +2,7 @@
 
 | issue | status / workaround |
 |---|---|
+| **`)Skip` (token 83480) appears at clause ends**, including inside tool-call arguments and reasoning | decode-path logits fault, not sampling: prefill scores it p 0.007 / rank 7, decode p 0.65 on the same prefix. Mask it — `"bad_words": [")Skip", ",Skip", ".Skip"]` per request, or `scripts/badwords_proxy.py` in front. Root cause still open: A/B the decode-only kernels (nvfp4 KV read-back, `B12X_MLA_SPARSE`, small-batch MoE). Evidence and detector in [docs/DECODE_PATH_TOKEN_LEAK.md](docs/DECODE_PATH_TOKEN_LEAK.md) |
 | **Needle timings are prefix-cache contaminated** (filler not salted, 96 % hit rate) | correctness kept, timings ignored; prefill measured with `scripts/bench-ctx.py` instead |
 | **One request at a time** (`Running: 1 reqs, Waiting: N`) | by design with the DSpark draft (`MAX_NUM_SEQS=1`); concurrent clients queue |
 | **First image request after boot is slow** | one-time Triton/TileLang JIT for the encoder shapes; subsequent requests 3–4 s for a 400-token image |
