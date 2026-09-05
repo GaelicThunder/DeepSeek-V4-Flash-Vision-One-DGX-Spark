@@ -15,7 +15,15 @@ metodo. Qui il metodo e' uno solo, per tutti:
   - stream=True: il primo chunk separa prefill da decode senza doverli dedurre.
 
     prefill t/s = token_prompt / (t_primo_chunk - t_invio)
-    decode  t/s = (n_chunk - 1) / (t_ultimo_chunk - t_primo_chunk)
+    decode  t/s = (completion_tokens - 1) / (t_ultimo_chunk - t_primo_chunk)
+
+  completion_tokens viene da `usage` (stream_options.include_usage). NON si contano i
+  chunk: con lo speculative decoding un chunk porta piu' token (fino a k+1 per step) e
+  il server puo' fondere piu' step in un chunk, quindi "chunk/s" NON e' "token/s".
+  (Le prime misure del 2026-09-03 contavano i chunk: quei 10-11 "tok/s" erano step/s.)
+
+  Il prompt chiede una risposta di ~200 parole e spegne il thinking, cosi' il decode
+  misurato e' un tratto lungo e stabile (T=0) e non 6 token prima dell'EOS.
 
 Il decode qui e' decode A CONTESTO PIENO, che e' l'unico numero onesto: i
 "38 t/s" pubblicati sono C1 a contesto corto e non sono confrontabili con un
@@ -45,7 +53,9 @@ def build_prompt(tok, target_tokens, salt):
     head = f"[run-salt {salt}] Read the following log and answer at the end.\n"
     n_head = len(tok.encode(head))
     n_filler = len(tok.encode(FILLER))
-    tail = "\n\nQuestion: in one sentence, what does the coordinator reconcile?"
+    tail = ("\n\nQuestion: in about 200 words of plain prose, what does the coordinator reconcile, "
+            "why does the ordering of the intent log and the manifest flush matter, and what role "
+            "does the per-shard epoch play? Do not use lists.")
     n_tail = len(tok.encode(tail))
     reps = max(1, (target_tokens - n_head - n_tail) // n_filler)
     body = FILLER * reps
@@ -66,6 +76,8 @@ def run_one(url, model, prompt, n_prompt, max_tokens, timeout, extra_body):
         "max_tokens": max_tokens,
         "temperature": 0.0,
         "stream": True,
+        "stream_options": {"include_usage": True},
+        "chat_template_kwargs": {"thinking": False},
     }
     body.update(extra_body)
     req = urllib.request.Request(
@@ -78,6 +90,7 @@ def run_one(url, model, prompt, n_prompt, max_tokens, timeout, extra_body):
     t_last = None
     n_chunks = 0
     usage_prompt = None
+    usage_completion = None
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         for raw in resp:
             line = raw.decode("utf-8", "replace").strip()
@@ -92,6 +105,7 @@ def run_one(url, model, prompt, n_prompt, max_tokens, timeout, extra_body):
                 continue
             if obj.get("usage"):
                 usage_prompt = obj["usage"].get("prompt_tokens", usage_prompt)
+                usage_completion = obj["usage"].get("completion_tokens", usage_completion)
             choices = obj.get("choices") or []
             if not choices:
                 continue
@@ -107,16 +121,22 @@ def run_one(url, model, prompt, n_prompt, max_tokens, timeout, extra_body):
     if t_first is None:
         raise RuntimeError("nessun token generato (stream vuoto)")
     n_prompt_real = usage_prompt or n_prompt
+    if usage_completion is None:
+        raise RuntimeError("no usage.completion_tokens in the stream: the server ignores "
+                           "stream_options.include_usage, decode tok/s cannot be measured honestly")
     prefill_s = t_first - t0
     decode_s = (t_last - t_first) if t_last and t_last > t_first else 0.0
     return {
         "prompt_tokens": n_prompt_real,
         "prompt_tokens_local": n_prompt,
+        "gen_tokens": usage_completion,
         "gen_chunks": n_chunks,
         "prefill_s": round(prefill_s, 3),
         "prefill_tok_s": round(n_prompt_real / prefill_s, 1) if prefill_s > 0 else None,
         "decode_s": round(decode_s, 3),
-        "decode_tok_s": round((n_chunks - 1) / decode_s, 2) if decode_s > 0 else None,
+        # tokens after the first chunk / time after the first chunk. The first chunk may carry
+        # more than one token under speculation, so this is a slight UNDER-estimate, never an over.
+        "decode_tok_s": round((usage_completion - 1) / decode_s, 2) if decode_s > 0 and usage_completion > 1 else None,
     }
 
 
@@ -126,7 +146,7 @@ def main():
     ap.add_argument("--model", default="deepseek-v4-flash-vision-exp")
     ap.add_argument("--tokenizer", required=True, help="dir con tokenizer.json del modello servito")
     ap.add_argument("--ctx", type=int, nargs="+", default=[100000, 250000])
-    ap.add_argument("--gen", type=int, default=128, help="token da generare per misurare il decode")
+    ap.add_argument("--gen", type=int, default=256, help="max token da generare per misurare il decode (il prompt chiede ~200 parole)")
     ap.add_argument("--timeout", type=int, default=3600)
     ap.add_argument("--tag", default="run")
     ap.add_argument("--out", default=None, help="file JSON dove appendere i risultati")
@@ -154,7 +174,7 @@ def main():
         print(
             f"[{args.tag}] ctx {target}: prefill {r['prefill_tok_s']} tok/s "
             f"({r['prompt_tokens']} tok in {r['prefill_s']}s) · "
-            f"decode {r['decode_tok_s']} tok/s",
+            f"decode {r['decode_tok_s']} tok/s ({r['gen_tokens']} tok in {r['decode_s']}s, {r['gen_chunks']} chunks)",
             flush=True,
         )
 
