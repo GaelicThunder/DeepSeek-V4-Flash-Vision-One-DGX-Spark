@@ -1,5 +1,12 @@
 # TODO
 
+- **Publish the A+ layer files.** The 22 promoted 3-bit layer files (53 GB, 256 experts each, MixedK layout) are only
+  on the reference machine; `scripts/aplus/` rebuilds them from the source in ~4 h on 2×H200 (or ~20 h on the Spark).
+  Upload them (or the whole 100 GiB pack) to the Hub so A+ is a download, not a build.
+- **Choose the 22 layers by measurement, not by proxy.** The current set is the proxy-error ranking; swapping blocks
+  of layers (25 min per boot + NLL run) can only improve it. Also test 23–24 layers at a shorter served context.
+- **Retrain the DSpark draft against A+.** τ is 3.66 on code / 1.88 on prose; the target changed, the draft did not.
+
 - **Close the `)Skip` root cause.** The mask in `scripts/badwords_proxy.py` hides it; it does not fix it. One boot
   with `MODE=mtp0` says whether the corruption needs the speculative verify block at all, then swap one decode-only
   kernel at a time (`kv_cache_dtype` off `nvfp4_ds_mla`, the `B12X_MLA_SPARSE` decode path, the small-batch MoE)

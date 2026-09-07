@@ -25,6 +25,42 @@ Everything below was measured on 2026-09-03 on one machine. The raw outputs are 
 | load | ~2 min cold from NVMe, 25 s with a warm page cache; the first boot compiles ~10 min of kernels into `cache/` |
 | MMLU-Pro (251 items, 10-way, letter logprob) | **64.3 %** — vs 60.8 % for the 3-bit REAP-pruned text recipe on the same items |
 
+## A+ — 256 experts, 3-bit where it matters (2026-09-07)
+
+![A+](assets/aplus/banner.png)
+
+The question this repository kept asking was *experts or bits*: the single-Spark packs published so far either keep
+all 256 experts at 2-bit (this recipe, MixedK) or drop 40 experts to afford 3-bit (the REAP-K216 packs). **A+** stops
+choosing: it keeps every expert and lifts **28 of the 43 expert layers to 3-bit** — the 6 the MixedK pack already had
+plus 22 picked by their measured quantization error, all 256 experts of each re-quantized from the source
+(abliterated) weights with the unpruned model as calibration. It is the first single-Spark pack that beats the 2-bit
+one on prose, math and code at the same time, at the same 245,760-token context.
+
+| paired on 64,859 frozen tokens | prose (wikitext) | math (gsm8k) | code | everything |
+|---|---|---|---|---|
+| **A+ − 2-bit MixedK** (nats, negative = better) | **−0.133** ± 0.005 | **−0.062** ± 0.008 | **−0.081** ± 0.005 | −0.109 |
+| as perplexity | −12.5 % | −6.0 % | −7.8 % | −10.3 % |
+| A+ above the FP8 source (2×Spark, full precision) | +14.7 % | **+0.2 %** | +8.5 % | +10.9 % |
+| 2-bit MixedK above the source | +31 % | +6.6 % | +18 % | +24 % |
+| 3-bit REAP-216 (this build) above the source | +75 % | +2.5 % | +7.0 % | +42 % |
+
+| A+ on one GB10 | measured |
+|---|---|
+| weights resident | **100.08 GiB** (`Model loading took`), 28 s warm load |
+| context | 245,760 per request, KV pool 269,471 tokens at `UTIL=0.925` (26 promoted layers do not fit: 0.63 GiB of KV left) |
+| decode, DSpark K5 draft | 37.6 tok/s code · 34.1 counting · 19.7 free prose with thinking (2-bit: 37.5 · 37.3 · 21.8) |
+| verify steps | 10.4–10.5 /s (2-bit: 11.4) — the extra 3-bit bytes cost ~8 % per step |
+| MMLU-Pro, 251 items, two option orders | 63.2 % (2-bit: 64.3 %; run-to-run noise ±1 item, the difference is inside it) |
+| perplexity, 8 fixed passages | 4.487 (2-bit 4.545, 3-bit REAP 5.373) |
+
+How it was built, why these layers, and the four studies behind it (the FP8 reference, *experts versus bits* separated
+with byte-identical weights, the 216-expert engine path verified bit-exact against a float reference, and the retraction
+of an earlier "pruning is free" result) are in [`docs/APLUS.md`](docs/APLUS.md). Figures: [`assets/aplus/`](assets/aplus/).
+Build scripts (pod conversion, splice, pack assembly, boot ladder): [`scripts/aplus/`](scripts/aplus/). Receipts:
+[`receipts/nll/`](receipts/nll/) and [`receipts/aplus/`](receipts/aplus/).
+
+![what each pack costs against the source](assets/aplus/ppl_vs_source.png)
+
 ## Why this recipe exists
 
 Two recipes for DeepSeek-V4-Flash already run on one Spark. MiaAI-Lab serves the **text** model from
@@ -74,7 +110,9 @@ Paired on the 502 MMLU-Pro decisions: 323 correct vs 305, 94 discordant (56 only
 On MATH the two engines solve 49 of the same problems and one different geometry item each. Run-to-run noise
 of the harness itself, measured by repeating this recipe on a second boot: ±1 item.
 
-Keeping all 256 experts costs less than dropping 40 of them and keeping a bit. Method and per-category
+Keeping all 256 experts costs less than dropping 40 of them and keeping a bit — and, since 2026-09-07, keeping all 256
+*and* lifting the sensitive layers to 3-bit costs less still: see [A+](#a--256-experts-3-bit-where-it-matters-2026-09-07)
+and the corrected experts-versus-bits accounting in [`docs/APLUS.md`](docs/APLUS.md#3-experts-versus-bits-with-the-same-weights). Method and per-category
 numbers: [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
 
 ### Speed, and where the 3-bit recipe is faster
@@ -126,6 +164,13 @@ The mitigation costs nothing and needs no restart — add `"bad_words": [")Skip"
 requests, or put [`scripts/badwords_proxy.py`](scripts/badwords_proxy.py) in front of the engine if your
 client cannot. `top_p`/`top_k` do not help (the token is already rank 1 in the bad row) and `min_p` /
 `logit_bias` are rejected outright under speculative decoding.
+
+Status 2026-09-05: it reproduces with speculation off (`MODE=mtp0`, p 0.27 at the seeded slot), so the verify block
+and the sampler are out; switching the sparse indexer to `native` or the MoE activations to 16-bit leaves the
+seeded-slot probability bit-identical (0.6473), so the fault sits in the part of the decode path those knobs do not
+touch. A free 400-token run is a lottery (it reports "clean" whenever it never wanders into the trap); the seeded slot
+(`tools/decode_vs_prefill.py`, `tools/token_leak_probe.py --verify-fix`) is the test. The mitigation above is
+unchanged and is what the reference deployment runs at its gateway.
 
 Full evidence, the exonerated suspects, the remaining kernel A/B and the detector
 ([`tools/token_leak_probe.py`](tools/token_leak_probe.py), which finds this class of fault on any model
@@ -268,7 +313,7 @@ docs/         PORT_NOTES.md · CONVERSION.md · BENCHMARK.md · DECODE_PATH_TOKE
   MixedK pack and for the parallel recipe — the same `load_weights` bug found the same day on two continents is the
   best kind of confirmation.
 - **MiaAI-Lab** for the recipe this one is built on, **0xSero** for the sparkinfer image and the rank-sliced tp1
-  layout, **turboderp** for EXL3.
+  layout and the REAP-K216 keep list, **turboderp** for EXL3 and a converter whose per-tensor recipes made A+ possible.
 - The authors of vLLM PR #54566 for the vision model implementation.
 - Ported, measured and written up on an ASUS Ascent GX10 (DGX Spark) by GaelicThunder.
 

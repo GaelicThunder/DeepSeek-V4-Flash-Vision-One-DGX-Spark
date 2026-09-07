@@ -185,3 +185,12 @@ decode path and says plainly whether it reproduced.
 
 `--head <path-to-tp1>` additionally reports the outlier rows of `head.weight`, which is where to look if
 your leaked token is a different one.
+
+## Status 2026-09-05
+
+- Reproduces with speculation off (`MODE=mtp0`): p 0.27 at the seeded slot. The verify block and the sampler are out.
+- `INDEXER_BACKEND=native` and `BACKEND=b12x-a16` leave the seeded-slot probability bit-identical (0.6473): the fault
+  is in the part of the decode path those knobs do not touch (candidates: the small-batch MoE decode kernel, the
+  decode-side head GEMV path). A free 400-token run is not a test — it reports "clean" whenever the trajectory never
+  wanders into the trap; always force the slot.
+- Mitigation unchanged: `bad_words` (`scripts/badwords_proxy.py`); the reference deployment applies it at its gateway.

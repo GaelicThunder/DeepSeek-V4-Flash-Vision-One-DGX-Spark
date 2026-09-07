@@ -1,0 +1,28 @@
+### PULL start 2026-09-06T23:57:40+02:00
+=== 00:03:05 layer 0 ok 134 s, 17 MB/s
+=== 00:11:44 layer 1 ok 139 s, 16 MB/s
+=== 00:41:18 layer 6 ok 136 s, 16 MB/s
+=== 00:48:48 layer 8 ok 133 s, 17 MB/s
+=== 00:59:25 layer 9 ok 130 s, 17 MB/s
+=== 01:06:56 layer 11 ok 133 s, 17 MB/s
+=== 01:19:40 layer 12 ok 132 s, 17 MB/s
+=== 01:31:23 layer 16 ok 133 s, 17 MB/s
+=== 01:44:09 layer 19 ok 134 s, 17 MB/s
+=== 01:52:44 layer 23 ok 135 s, 17 MB/s
+=== 02:00:13 layer 24 ok 132 s, 17 MB/s
+=== 02:08:56 layer 25 ok 143 s, 16 MB/s
+=== 02:16:24 layer 26 ok 131 s, 17 MB/s
+=== 02:27:03 layer 27 ok 133 s, 17 MB/s
+=== 02:34:39 layer 29 ok 139 s, 16 MB/s
+=== 02:42:10 layer 30 ok 134 s, 17 MB/s
+=== 02:50:43 layer 31 ok 133 s, 17 MB/s
+=== 02:59:16 layer 32 ok 133 s, 17 MB/s
+=== 03:06:45 layer 33 ok 132 s, 17 MB/s
+=== 03:15:17 layer 34 ok 132 s, 17 MB/s
+=== 03:22:46 layer 35 ok 132 s, 17 MB/s
+=== 03:31:20 layer 36 ok 134 s, 17 MB/s
+=== 03:40:56 layer 37 ok 133 s, 17 MB/s
+=== 03:48:34 layer 39 ok 141 s, 16 MB/s
+=== 03:58:12 layer 40 ok 135 s, 17 MB/s
+=== 04:05:48 layer 42 ok 139 s, 16 MB/s
+### PULL done 2026-09-07T04:05:48+02:00: 26 files, 59G
