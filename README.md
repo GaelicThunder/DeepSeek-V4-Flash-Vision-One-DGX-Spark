@@ -41,7 +41,7 @@ quantization error. Everything else — the other 15 expert layers, attention, i
 vision tower, the DSpark draft plan — is the MixedK pack's own files, unchanged. Same format, same layout, same engine:
 the K in the name is MixedK's, the "calibrated" is what this repository adds. Ready to serve as a download:
 [`GaelicThunder/DeepSeek-V4-Flash-Vision-Exp-ablit-EXL3-Kalibrated`](https://huggingface.co/GaelicThunder/DeepSeek-V4-Flash-Vision-Exp-ablit-EXL3-Kalibrated)
-(106 GB: the `tp1/` and `dspark-draft-k64/` directories `scripts/serve.sh` mounts).
+(106 GB: the `tp1/` and `dspark-draft-k64/` directories `scripts/serve.sh` mounts; public, not gated, published 2026-09-07).
 
 **How much of the original model each pack keeps.** The number is the geometric mean, over 64,859 frozen tokens
 (wikitext · gsm8k · code), of the probability the pack gives the true next token divided by the probability the

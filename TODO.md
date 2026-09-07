@@ -1,9 +1,5 @@
 # TODO
 
-- **Kalibrated pack on the Hub** — upload of the ready-to-serve directory (tp1/ + dspark-draft-k64/, 106 GB) to
-  `GaelicThunder/DeepSeek-V4-Flash-Vision-Exp-ablit-EXL3-Kalibrated` in progress on 2026-09-07; `./start.sh` already
-  points at it. Until it is public, `PACK=mixedk ./start.sh` is the working route and `scripts/kalibrated/` rebuilds
-  the pack from the source (2×H200, ~4 h; ~20 h on the Spark).
 - **23–24 promoted layers at a shorter served context.** Each layer costs 0.75 GiB of KV pool; at 245k the pack stops
   at 22. The layer *choice* is settled by measurement (`docs/KALIBRATED.md` §5: head / middle / tail swaps against the
   four spares; the ranking holds, nothing to gain from shuffling the tail).

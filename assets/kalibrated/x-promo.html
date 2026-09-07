@@ -12,9 +12,11 @@
      linear-gradient(180deg, rgba(255,255,255,.015), transparent 40%); }
   .kicker { font-size:19px; color:var(--dim); letter-spacing:.06em; }
   .kicker b { color:var(--acc); font-weight:500; }
-  h1 { margin:10px 0 2px; font-size:64px; font-weight:700; letter-spacing:-.025em; line-height:1; }
+  h1 { margin:10px 0 6px; font-size:56px; font-weight:700; letter-spacing:-.025em; line-height:1; }
+  .h2 { font-size:30px; color:var(--acc2); font-weight:600; letter-spacing:-.01em; }
+  .h2 b { color:var(--white); font-weight:700; }
   h1 span { color:var(--acc2); }
-  .sub { font-size:20px; color:#c3c9d4; margin:8px 0 0; line-height:1.35; }
+  .sub { font-size:19px; color:#c3c9d4; margin:8px 0 0; line-height:1.35; }
   .sub b { color:var(--white); font-weight:600; }
   .main { display:grid; grid-template-columns: 1fr 470px; gap:56px; margin-top:18px; flex:1; }
   .chart { position:relative; border-top:1px solid var(--line); padding-top:16px; }
@@ -43,10 +45,11 @@
   .foot b { color:#c3c9d4; font-weight:500; }
   code { display:inline-block; white-space:nowrap; background:#161b24; border:1px solid var(--line); border-radius:6px; padding:3px 9px; color:var(--acc); font-size:15px; }
 </style>
-<div class="kicker">DeepSeek-V4-Flash-Vision-Exp (abliterated) · EXL3 · <b>one DGX Spark</b>, GB10, 128 GB · text + images · 245k context</div>
-<h1>Kalibrated Vision Exp <span>— 3-bit where it matters</span></h1>
-<p class="sub">Built on vcruz305's MixedK pack: <b>all 256 experts kept</b>, 22 more expert layers re-quantized at a <b>calibrated 3-bit</b>, picked by measured
-quantization error. <b>Keeps 90 %</b> of the original model's token probability on one GB10, where the 2-bit pack keeps 81 % and the 216-expert 3-bit pack 70 %.</p>
+<div class="kicker">EXL3 · text + images · 245k context · speculative decoding · CUDA graphs · <b>GB10, 128 GB unified memory</b></div>
+<h1>DeepSeek-V4-Flash-Vision on <span>one DGX Spark</span></h1>
+<div class="h2">the <b>Kalibrated Vision Exp</b> pack — 3-bit where it matters</div>
+<p class="sub">DeepSeek-V4-Flash-<b>Vision-Exp</b> (abliterated), built on vcruz305's MixedK pack: <b>all 256 experts kept</b>, 22 more expert layers re-quantized at a
+<b>calibrated 3-bit</b>. <b>Keeps 90 %</b> of the original model's token probability; the 2-bit pack keeps 81 %, the 216-expert 3-bit pack 70 %.</p>
 <div class="main">
   <div class="chart">
     <div class="t"><b>Token probability kept of the original-precision model</b> · geometric mean over 64,859 frozen tokens</div>

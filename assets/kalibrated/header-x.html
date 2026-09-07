@@ -11,9 +11,11 @@
      radial-gradient(700px 380px at 5% 110%, rgba(217,180,106,.14), transparent 60%); pointer-events:none; }
   .kicker { font-size:15px; color:var(--dim); letter-spacing:.06em; }
   .kicker b { color:var(--acc); font-weight:500; }
-  h1 { margin:8px 0 4px; font-size:38px; font-weight:600; letter-spacing:-.015em; line-height:1.05; }
+  h1 { margin:6px 0 2px; font-size:34px; font-weight:600; letter-spacing:-.015em; line-height:1.05; }
   h1 em { font-style:normal; color:var(--acc2); }
-  .sub { font-size:17px; color:#b8bfcc; margin:0 0 14px; line-height:1.35; max-width:1360px; }
+  .h2 { font-size:19px; color:var(--acc2); font-weight:600; margin:0 0 6px; }
+  .h2 b { color:var(--fg); font-weight:700; }
+  .sub { font-size:16px; color:#b8bfcc; margin:0 0 10px; line-height:1.3; max-width:1360px; }
   .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:0 26px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:12px 0 10px; }
   .stat .n { font-size:36px; font-weight:600; letter-spacing:-.02em; line-height:1; }
   .stat .n em { font-style:normal; font-size:20px; color:var(--dim); font-weight:400; margin-left:4px; }
@@ -25,8 +27,9 @@
   .foot { margin-top:auto; padding-top:9px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-end; font-size:12px; color:var(--dim); line-height:1.45; }
   .foot b { color:#b8bfcc; font-weight:500; }
 </style>
-<div class="kicker">DeepSeek-V4-Flash-Vision-Exp · EXL3 · <b>one DGX Spark</b> (GB10, 128 GB unified) · text + images · 245k context</div>
-<h1>Kalibrated Vision Exp — <em>3-bit where it matters</em></h1>
+<div class="kicker">EXL3 · text + images · 245k context · speculative decoding · CUDA graphs · <b>GB10, 128 GB unified memory</b></div>
+<h1>DeepSeek-V4-Flash-Vision on <em>one DGX Spark</em></h1>
+<div class="h2">the <b>Kalibrated Vision Exp</b> pack — 3-bit where it matters</div>
 <p class="sub">DeepSeek-V4-Flash-<b>Vision-Exp</b> (abliterated), built on vcruz305's MixedK pack: all 256 experts kept, 28 of 43 expert layers at calibrated 3-bit instead of 6, picked by
 measured quantization error. Keeps <b>90 %</b> of the original model's token probability; the 2-bit MixedK it extends keeps 81 %.</p>
 <div class="stats">
