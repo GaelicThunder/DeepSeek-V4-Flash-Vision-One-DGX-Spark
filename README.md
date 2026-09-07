@@ -347,7 +347,7 @@ assets/       card.png · aplus/ (banner, X header, figures)
   MixedK pack and for the parallel recipe — the same `load_weights` bug found the same day on two continents is the
   best kind of confirmation.
 - **MiaAI-Lab** for the recipe this one is built on, **0xSero** for the sparkinfer image and the rank-sliced tp1
-  layout and the REAP-K216 keep list, **turboderp** for EXL3 and a converter whose per-tensor recipes made A+ possible.
+  layout and the REAP-K216 keep list, **turboderp** for EXL3 and a converter whose per-tensor recipes made MixedK+ possible.
 - The authors of vLLM PR #54566 for the vision model implementation.
 - Ported, measured and written up on an ASUS Ascent GX10 (DGX Spark) by GaelicThunder.
 
