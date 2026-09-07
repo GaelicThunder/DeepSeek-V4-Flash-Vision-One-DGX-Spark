@@ -46,7 +46,7 @@ the K in the name is MixedK's, the "calibrated" is what this repository adds. Re
 **How much of the original model each pack keeps.** The number is the geometric mean, over 64,859 frozen tokens
 (wikitext · gsm8k · code), of the probability the pack gives the true next token divided by the probability the
 original-precision model gives it — the original being the FP8/MXFP4 release of the same abliterated Vision-Exp,
-served on two Sparks. 100 % is the original itself.
+served with vLLM (tensor-parallel 2) on a 2×H200 pod. 100 % is the original itself.
 
 | % of the original's token probability | prose (wikitext) | math (gsm8k) | code | all tokens |
 |---|---|---|---|---|

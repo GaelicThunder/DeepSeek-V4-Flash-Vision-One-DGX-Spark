@@ -39,7 +39,7 @@ measured quantization error. Keeps <b>90 %</b> of the original model's token pro
   <div class="stat"><div class="n">245,760</div><div class="l">tokens of context per request<br>(KV pool: 269k tokens)</div></div>
 </div>
 <div class="row2">
-  <div><div class="n y">90 %</div><div class="l">of the original over all 64,859 test tokens: geometric mean of<br>p(token) vs the FP8/MXFP4 release served on two Sparks</div></div>
+  <div><div class="n y">90 %</div><div class="l">of the original over all 64,859 test tokens: geometric mean of<br>p(token) vs the FP8/MXFP4 release served on a 2×H200 pod</div></div>
   <div><div class="n y">−0.133 nats</div><div class="l">paired vs MixedK on prose (SE 0.005); math −0.062, code −0.081<br>same tokens, same engine, only 22 layers of experts changed</div></div>
   <div><div class="n">37.6 / 34.1 / 19.7</div><div class="l">tok/s decode: code / counting / free prose<br>with thinking (DSpark K5 draft)</div></div>
   <div><div class="n">100 GiB</div><div class="l">weights resident, 28 s warm load,<br>MMLU-Pro 63.2 % (MixedK 64.3 %: tie within noise)</div></div>

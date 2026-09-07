@@ -35,7 +35,7 @@ signature of exllamav3's uncalibrated fallback; swapping them for calibrated one
 ## 2. Results
 
 Paired per-token NLL on the frozen 64,859-token corpus (wikitext 38,397 · gsm8k 9,031 · code 17,431), greedy, prefill
-path, the same items for every pack. The reference is the full-precision FP8 checkpoint served on two Sparks.
+path, the same items for every pack. The reference is the full-precision FP8 checkpoint (the abliterated source, release precision) served with vLLM 0.28.1 nightly at tensor-parallel 2 on a 2×H200 pod.
 
 | nats above the original (paired) → % of its token probability kept | prose | math | code | all |
 |---|---|---|---|---|

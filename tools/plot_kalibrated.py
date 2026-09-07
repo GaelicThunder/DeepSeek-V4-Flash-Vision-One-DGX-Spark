@@ -2,7 +2,7 @@
 """Figures for the Kalibrated Vision Exp release (dark theme of assets/card.html).
 
 Every number is a paired per-token NLL difference against the ORIGINAL-precision release of the same model
-(DeepSeek-V4-Flash-Vision-Exp, abliterated by drowzeys; FP8 attention, MXFP4 experts; served on two Sparks) on the
+(DeepSeek-V4-Flash-Vision-Exp, abliterated by drowzeys; FP8 attention, MXFP4 experts; served with vLLM on a 2×H200 pod) on the
 frozen 64,859-token corpus in receipts/nll/. The headline metric is what a quantized pack keeps of the original:
 
     retained = exp(-mean delta NLL) = geometric mean over tokens of p_pack(token) / p_original(token)
@@ -70,7 +70,7 @@ def fig_retention(out):
         for b, val in zip(bars, v):
             ax.text(b.get_x() + b.get_width() / 2, b.get_height() + 0.8, f"{val:.0f}", ha="center", va="bottom", fontsize=8.5, color=col if col != GREY else DIM)
     ax.axhline(100, color=FG, linewidth=0.9)
-    ax.text(3.42, 101.0, "100 % = the original-precision model (FP8/MXFP4, two Sparks)", fontsize=8.8, color=FG, ha="right")
+    ax.text(3.42, 101.0, "100 % = the original-precision model (FP8/MXFP4, 2×H200 pod)", fontsize=8.8, color=FG, ha="right")
     ax.set_xticks(x); ax.set_xticklabels(DOMAINS)
     ax.set_ylabel("token probability kept, % of the original\n(geometric mean over tokens)")
     ax.set_ylim(40, 106)
