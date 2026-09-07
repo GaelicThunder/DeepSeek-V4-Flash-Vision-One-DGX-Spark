@@ -171,6 +171,16 @@ refused by the DSpark validator. The draft stays at 5. Rebuilding the draft from
 builder copies the `mtp.*` tensors, which Kalibrated leaves as they are in MixedK — only training a draft on this
 target would move τ, and that is a different project.
 
+*Draft width.* The served draft keeps 64 of the MTP module's 256 experts, chosen by the 0731 REAP ranking. A K128
+draft (`reference/draft_plan_k128.json`: identity keep plus the full 0731 `mtp_ranked`; the served 64 are exactly its
+head) booted at 32k context with `MAX_NUM_BATCHED_TOKENS=2048` and measured 39.7 / 36.3 / 20.3 tok/s on counting /
+code / prose against 34.1 / 37.6 / 19.7 for K64, acceptance τ 3.79 / 3.51 / 1.94 against 3.26 / 3.65 / 1.88, verify
+steps unchanged at 10.4–10.5 /s ([`receipts/kalibrated/dsbench-aplus22-k128-20260907.jsonl`](../receipts/kalibrated/dsbench-aplus22-k128-20260907.jsonl)).
+So the wider pool helps repetitive structured output (+16 %), prose a little, code not at all, and it costs 2.4 GiB
+of unified memory: with it the pack cannot hold one 245,760-token request (the fixed part of the KV requirement is
+~3 GiB, the draft leaves 2.8). K64 stays; K128 is an option only for someone who trades context for structured-output
+speed.
+
 *`)Skip` and the KV cache.* The remaining suspect for the decode-path token fault was the NVFP4 KV cache read by the
 decode kernels. It cannot be A/B-tested on this stack: the packed MLA layout accepts only `fp8_ds_mla` or
 `nvfp4_ds_mla`, and `fp8_ds_mla` fails at engine init with `swa_k_cache page stride 37376 is smaller than DSV4 page

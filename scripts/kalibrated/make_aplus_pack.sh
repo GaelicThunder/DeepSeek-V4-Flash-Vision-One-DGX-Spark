@@ -13,6 +13,13 @@ for d in dspark-draft-k64 files hf-empty; do [ -e $VROOT/$d ] && cp -al $VROOT/$
 mkdir -p $AROOT/cache && cp -a $VROOT/cache/. $AROOT/cache/ 2>/dev/null || true
 for L in $LAYERS; do f=$(printf "exl3-layer-%03d-tp1-rank0.safetensors" $L); rm -f $A/$f $A/$f.sha256; ln $SPL/$f $A/$f; ln $SPL/$f.sha256 $A/$f.sha256; done
 for f in config.json config.text.json config-vision.json bitrates.json rank-sliced-tp1-manifest.json; do rm -f $A/$f; cp $C/$f $A/$f; done
+# the text/vision view manifests must carry the promoted file sizes too (the hardlinked ones are MixedK's)
+python3 - "$A" <<'PY2'
+import json, sys
+A = sys.argv[1]; cur = json.load(open(f"{A}/rank-sliced-tp1-manifest.json"))
+text = dict(cur); text["files"] = [f for f in cur["files"] if not f["name"].startswith("carried-vis")]
+json.dump(text, open(f"{A}/rank-sliced-tp1-manifest.text.json", "w"), indent=2); json.dump(cur, open(f"{A}/rank-sliced-tp1-manifest.vision.json", "w"), indent=2)
+PY2
 python3 - "$A" <<'PY'
 import json, sys, os
 A = sys.argv[1]

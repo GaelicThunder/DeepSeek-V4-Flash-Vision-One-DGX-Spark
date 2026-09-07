@@ -22,6 +22,5 @@
 - **Upstream.** The overlay is a port onto a fork that will eventually rebase past PR #54566; at that point the vLLM
   half of the overlay should shrink to the unified-memory `load_weights` fix and the CUDA-graph-safe router, which
   are worth proposing upstream on their own.
-- **Text-only view as a served option** (`tools/use_vision.sh off`) — it boots and was the debugging path, but it has
-  not been benchmarked separately since the vision tensors were added.
+- **Text-only view as a served option** (`tools/use_vision.sh off`) — currently broken (TO_FIX: the router expects `gate.bias_vl`); fix = make the overlay's router accept a missing `bias_vl`.
 - Nightly/weekly re-run of `scripts/bench/bench_all.py` when the image digest or the pack revision changes.
