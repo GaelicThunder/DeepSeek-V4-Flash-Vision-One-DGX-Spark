@@ -1,8 +1,8 @@
 # TODO
 
-- **Publish the A+ layer files.** The 22 promoted 3-bit layer files (53 GB, 256 experts each, MixedK layout) are only
-  on the reference machine; `scripts/aplus/` rebuilds them from the source in ~4 h on 2×H200 (or ~20 h on the Spark).
-  Upload them (or the whole 100 GiB pack) to the Hub so A+ is a download, not a build.
+- **Publish the MixedK+ pack.** The ready-to-serve directory (tp1/ + dspark-draft-k64/, ~100 GiB; or just the 22
+  promoted 3-bit layer files, 53 GB) is only on the reference machine. Once it is on the Hub, `PLUS_REPO=<repo>
+  ./start.sh` is the whole install; until then `scripts/aplus/` rebuilds it (2×H200, ~4 h; ~20 h on the Spark).
 - **Choose the 22 layers by measurement, not by proxy.** The current set is the proxy-error ranking; swapping blocks
   of layers (25 min per boot + NLL run) can only improve it. Also test 23–24 layers at a shorter served context.
 - **Retrain the DSpark draft against A+.** τ is 3.66 on code / 1.88 on prose; the target changed, the draft did not.

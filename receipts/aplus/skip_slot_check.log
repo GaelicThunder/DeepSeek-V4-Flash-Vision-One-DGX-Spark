@@ -1,0 +1,7 @@
+# tools/decode_vs_prefill-style seeded-slot probe (slot_check.py) on MixedK+, engine direct (no bad_words), 2026-09-07 05:40 CEST
+[aplus22] slot check  cfg: n/a  prompt_len=30 prefix_len=50
+[aplus22] prefill-path at slot: emitted '.' p=0.696  p()Skip)=None  top3=[('.', 0.696), ('.\n\n', 0.256), (' and', 0.024)]
+[aplus22] decode-path (cut 1) at slot: emitted ')Skip' p=0.149  p()Skip)=0.1491  text=' responsibility)Skip'
+[aplus22] decode-path (cut 2) at slot: emitted '.' p=0.678  p()Skip)=<top5  text=' in responsibility.'
+[aplus22] decode-path (cut 3) at slot: emitted ' tax' p=0.520  p()Skip)=<top5  text=' small, monthly tax'
+# MixedK (2026-09-05, same probe): decode-path p()Skip) = 0.6473 at the same slot, prefill 0.0069. The fault is still there; weaker, not cured.

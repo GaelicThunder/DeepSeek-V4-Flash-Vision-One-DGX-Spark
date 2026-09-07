@@ -1,11 +1,11 @@
-# A+ — all 256 experts, 3-bit where it matters
+# MixedK+ (working name A+) — all 256 experts, 3-bit where it matters
 
 *Built and measured 2026-09-06/07 on one DGX Spark (GB10, 128 GB) plus five hours of a 2×H200 pod. Every number
 below has a receipt in [`receipts/nll/`](../receipts/nll/) or [`receipts/aplus/`](../receipts/aplus/).*
 
-## 1. What A+ is
+## 1. What MixedK+ is
 
-| | 2-bit MixedK (the served pack) | 3-bit REAP-216 | **A+** |
+| | MixedK (vcruz305; served until 09-07) | REAP-216 3-bit (same model, this repo) | **MixedK+** |
 |---|---|---|---|
 | routed experts per layer | 256 | 216 (40 pruned by the REAP plan) | **256** |
 | expert bits | 2-bit on 37 layers, 3-bit on 6 | 3-bit on all 43 | **3-bit on 28 layers, 2-bit on 15** |
@@ -13,36 +13,55 @@ below has a receipt in [`receipts/nll/`](../receipts/nll/) or [`receipts/aplus/`
 | KV pool at util 0.88 / 0.92 / 0.925 | 986k tokens | 512k | **269k** |
 | everything else | identical: attention, indexer, shared experts, router rows, hash tables, head, DSpark draft | | |
 
+All three columns are the same base model: DeepSeek-V4-Flash-**Vision-Exp**, abliterated by drowzeys
+(`base_model: deepseek-ai/DeepSeek-V4-Flash-Vision-Exp` on the source card). The string `0731` appears in this stack
+only as the MiaAI-Lab entrypoint's default download target (skipped because the pack ships its own manifest) and as
+the list of 64 expert *ids* the DSpark draft reuses from the 0731 draft plan; the draft's weights are built from the
+Vision-Exp pack.
+
 The 22 promoted layers are `27 23 31 35 32 34 37 40 1 39 25 29 8 30 19 26 24 11 12 9 0 42`, in ranking order; with
 the MixedK pack's own six (`3 13 21 22 28 41`) that makes 28 of 43. The remaining 15 layers keep the MixedK 2-bit
 tensors untouched. Promoting a layer costs 0.75 GiB (256 experts × 3 MiB); 26 promoted layers load fine but leave
-0.63 GiB of KV against the 3.91 GiB one 245,760-token request needs, so the served pack stops at 22.
+0.63 GiB of KV against the 3.91 GiB one 245,760-token request needs, so the served pack stops at 22. MixedK+ is, structurally, a MixedK: same EXL3 trellis format, same `mcg`
+codebook, same tp1 layout and non-expert tensors as vcruz305's pack, only with 28 layers at 3-bit instead of 6 —
+and its 3-bit layers are calibrated (the MixedK pack's six carry a constant relative error per tensor, the
+signature of exllamav3's uncalibrated fallback; swapping them for calibrated ones changed nothing measurable).
 
 ## 2. Results
 
 Paired per-token NLL on the frozen 64,859-token corpus (wikitext 38,397 · gsm8k 9,031 · code 17,431), greedy, prefill
 path, the same items for every pack. The reference is the full-precision FP8 checkpoint served on two Sparks.
 
-| nats above the FP8 source (paired) | prose | math | code | all | as perplexity, all |
-|---|---|---|---|---|---|
-| 2-bit MixedK, 256 experts | +0.271 | +0.064 | +0.162 | +0.213 | +23.7 % |
-| 3-bit REAP-216 (this repository's build) | +0.562 | +0.025 | +0.067 | +0.354 | +42.5 % |
-| 3-bit REAP-216 (0xSero text pack) | +0.647 | +0.090 | +0.063 | +0.412 | +51.0 % |
-| 2-bit pruned to 216 (pack E, §3) | +0.649 | +0.086 | +0.171 | +0.442 | +55.6 % |
-| **A+** | **+0.137** | **+0.002** | **+0.081** | **+0.103** | **+10.9 %** |
+| nats above the original (paired) → % of its token probability kept | prose | math | code | all |
+|---|---|---|---|---|
+| **MixedK+** | **+0.137 → 87 %** | **+0.002 → 99.8 %** | **+0.081 → 92 %** | **+0.103 → 90 %** |
+| MixedK (vcruz305) | +0.271 → 76 % | +0.064 → 94 % | +0.162 → 85 % | +0.213 → 81 % |
+| REAP-216 3-bit (this repository's build) | +0.562 → 57 % | +0.025 → 98 % | +0.067 → 94 % | +0.354 → 70 % |
+| 2-bit pruned to 216 (pack E, §3) | +0.649 → 52 % | +0.086 → 92 % | +0.171 → 84 % | +0.442 → 64 % |
 
-| A+ against the served 2-bit pack | prose | math | code |
+"% kept" is exp(−Δ), the geometric mean over tokens of p_pack/p_original: the plain reading of a paired NLL
+difference, 100 % = the original. **Cross-model, for orientation only:** the 0xSero/MiaAI-Lab 0731 REAP-216 3-bit
+text pack, scored against the *Vision-Exp* original on the same tokens, sits at +0.647 / +0.090 / +0.063 / +0.412
+(52 / 91 / 94 / 66 %). It is a different base model, so that row mixes the 0731↔Vision-Exp difference with its
+quantization loss and says nothing about either alone; it is in the figures hatched for that reason.
+
+| MixedK+ against MixedK, paired | prose | math | code |
 |---|---|---|---|
-| Δ nats (negative = A+ better) | **−0.133** | **−0.062** | **−0.081** |
+| Δ nats (negative = MixedK+ better) | **−0.133** | **−0.062** | **−0.081** |
 | SE over tokens | 0.005 | 0.008 | 0.005 |
 | as perplexity | −12.5 % | −6.0 % | −7.8 % |
 
-Other gates, A+ vs the 2-bit pack: perplexity on 8 fixed passages 4.487 vs 4.545; MMLU-Pro (251 items, two option
+Other gates, MixedK+ vs MixedK: perplexity on 8 fixed passages 4.487 vs 4.545; MMLU-Pro (251 items, two option
 orders, letter logprob) 63.2 % vs 64.3 % — the harness noise is ±1 item per run, so this is a tie; decode 37.6 / 34.1
 / 19.7 tok/s on code / counting / free prose with thinking vs 37.5 / 37.3 / 21.8 (medians of 3); verify steps 10.4–10.5
 per second vs 11.4 — the promoted layers read 1.5× the bytes, and the step is bandwidth-bound.
 
-![A+ vs 2-bit](../assets/aplus/aplus_vs_vis.png)
+![MixedK+ vs MixedK](../assets/aplus/mixedk_plus_vs_mixedk.png)
+
+Also checked on MixedK+: two- and three-image prompts (correct per-image descriptions, no engine errors,
+[`receipts/aplus/multi_image.log`](../receipts/aplus/multi_image.log)); the `)Skip` seeded slot still flips on the
+decode path, p 0.15 vs 0.65 on MixedK ([`receipts/aplus/skip_slot_check.log`](../receipts/aplus/skip_slot_check.log)) —
+weaker, not cured, the `bad_words` mask stays.
 
 ## 3. Experts versus bits, with the same weights
 
@@ -64,7 +83,7 @@ moves:
 
 On math and code the same decomposition reads +0.022 / +0.009 for the prune and −0.059 / −0.106 for the bits. So the
 REAP plan — calibrated on agentic and tool-calling traffic — removes experts that prose needs (rare names, first
-occurrences), and 3-bit helps everywhere once the experts are kept. That is the whole design of A+.
+occurrences), and 3-bit helps everywhere once the experts are kept. That is the whole design of MixedK+.
 
 ![experts vs bits](../assets/aplus/prune_vs_bits.png)
 
@@ -93,7 +112,7 @@ of its scratch arena — clone it before the next call, or every earlier result 
 
 The conversion log of the 3-bit REAP build reports, for every expert tensor, the error of the quantized weight measured
 on the calibration activations (`proxy_err`). Averaged over the 768 tensors of a layer it says how much a layer
-amplifies quantization error — a proxy for where 2-bit hurts most. A+ promotes the top of that ranking (excluding the
+amplifies quantization error — a proxy for where 2-bit hurts most. MixedK+ promotes the top of that ranking (excluding the
 six layers the MixedK pack already holds at 3-bit); the six MixedK layers sit in the middle of the same ranking, which
 is consistent with them having been chosen by some other rule. Under a linear share of the measured bits gain the 22
 layers were expected to give about −0.05 nats on prose; they gave −0.133, so the ranking is picking sensitive layers
@@ -123,6 +142,6 @@ rather than random ones. Picking them by measurement (swap blocks of layers, one
 ## 7. Credits
 
 DeepSeek for DeepSeek-V4-Flash-Vision-Exp; drowzeys for the abliteration the source carries; vcruz305 for the MixedK
-pack A+ is built on; 0xSero for the sparkinfer image, the rank-sliced tp1 layout and the REAP-K216 keep list;
-MiaAI-Lab for the single-Spark recipe; turboderp for EXL3 and a converter that takes a per-tensor recipe and resumes
+pack MixedK+ is built on; 0xSero for the sparkinfer image, the rank-sliced tp1 layout and the REAP-K216 keep list;
+MiaAI-Lab for the single-Spark recipe (and the one-command install this repo now mirrors); turboderp for EXL3 and a converter that takes a per-tensor recipe and resumes
 from a checkpoint. Measured and written up on an ASUS Ascent GX10 by GaelicThunder.

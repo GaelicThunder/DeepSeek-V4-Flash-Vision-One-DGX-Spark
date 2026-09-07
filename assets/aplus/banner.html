@@ -1,11 +1,11 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>A+ banner</title>
+<title>MixedK+ banner</title>
 <style>
   :root { --bg:#0e1116; --fg:#e6e9ef; --dim:#8b93a3; --line:#252b36; --acc:#7fd3a4; --acc2:#d9b46a; --red:#e07a6a; }
   html,body { margin:0; background:var(--bg); }
   body { width:1200px; height:675px; color:var(--fg); font-family:"Fira Code","Cascadia Code","DejaVu Sans Mono",monospace;
-         display:flex; flex-direction:column; box-sizing:border-box; padding:50px 64px 36px; position:relative; overflow:hidden; }
+         display:flex; flex-direction:column; box-sizing:border-box; padding:44px 64px 30px; position:relative; overflow:hidden; }
   body:before { content:""; position:absolute; inset:0; background:
      radial-gradient(900px 420px at 88% -10%, rgba(127,211,164,.16), transparent 60%),
      radial-gradient(700px 380px at 5% 110%, rgba(217,180,106,.14), transparent 60%); pointer-events:none; }
@@ -22,27 +22,27 @@
   .row2 { display:grid; grid-template-columns:repeat(4,1fr); gap:0 26px; padding:18px 0 0; }
   .row2 .n { font-size:25px; font-weight:600; letter-spacing:-.01em; }
   .row2 .l { font-size:12.5px; color:var(--dim); margin-top:5px; line-height:1.35; }
-  .foot { margin-top:auto; padding-top:14px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-end; font-size:12.5px; color:var(--dim); line-height:1.45; }
+  .foot { margin-top:auto; padding-top:12px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-end; font-size:12px; color:var(--dim); line-height:1.45; }
   .foot b { color:#b8bfcc; font-weight:500; }
 </style>
 <div class="kicker">DeepSeek-V4-Flash-Vision-Exp · EXL3 · <b>one DGX Spark</b> (GB10, 128 GB unified) · text + images · 245k context</div>
-<h1>A+ — 256 experts, <em>3-bit where it matters</em></h1>
-<p class="sub">The 2-bit MixedK pack that fits one Spark, with 28 of 43 expert layers lifted to 3-bit: layers picked by measured
-quantization error, all 256 experts re-quantized from the source, calibrated on the unpruned model. Same context, same speed class, better everywhere.</p>
+<h1>MixedK+ — <em>3-bit where it matters</em></h1>
+<p class="sub">DeepSeek-V4-Flash-<b>Vision-Exp</b> (abliterated), all 256 experts, 28 of 43 expert layers at 3-bit instead of 6, picked by measured quantization
+error and re-quantized from the original weights. Keeps <b>90 %</b> of the original model's token probability; the 2-bit MixedK it replaces kept 81 %.</p>
 <div class="stats">
-  <div class="stat"><div class="n g">−12.5<em>%</em></div><div class="l">perplexity on prose<br>vs the 2-bit MixedK pack (−0.133 nats, SE 0.005)</div></div>
-  <div class="stat"><div class="n g">−6.0<em>%</em></div><div class="l">perplexity on math<br>(gsm8k, −0.062 nats)</div></div>
-  <div class="stat"><div class="n g">−7.8<em>%</em></div><div class="l">perplexity on code<br>(−0.081 nats)</div></div>
+  <div class="stat"><div class="n g">87<em>%</em></div><div class="l">of the original on prose<br>(MixedK 76 % · REAP-216 3-bit 57 %)</div></div>
+  <div class="stat"><div class="n g">99.8<em>%</em></div><div class="l">of the original on math<br>(MixedK 94 % · REAP-216 3-bit 98 %)</div></div>
+  <div class="stat"><div class="n g">92<em>%</em></div><div class="l">of the original on code<br>(MixedK 85 % · REAP-216 3-bit 94 %)</div></div>
   <div class="stat"><div class="n">245,760</div><div class="l">tokens of context per request<br>(KV pool: 269k tokens)</div></div>
 </div>
 <div class="row2">
-  <div><div class="n y">+0.2 %</div><div class="l">above the full-precision FP8 model on math<br>(2-bit pack: +6.6 %, 3-bit REAP pack: +2.5 %)</div></div>
-  <div><div class="n y">+15 %</div><div class="l">above FP8 on prose — the 3-bit REAP-216 packs sit at +75…+91 %</div></div>
-  <div><div class="n">37.6 / 34.1 / 19.7</div><div class="l">tok/s decode: code / counting / free prose with thinking (DSpark K5 draft)</div></div>
-  <div><div class="n">100 GiB</div><div class="l">weights resident, 28 s warm load,<br>MMLU-Pro 63.2 % (2-bit: 64.3 %, tie within noise)</div></div>
+  <div><div class="n y">90 %</div><div class="l">of the original over all 64,859 test tokens: geometric mean of<br>p(token) vs the FP8/MXFP4 release served on two Sparks</div></div>
+  <div><div class="n y">−0.133 nats</div><div class="l">paired vs MixedK on prose (SE 0.005); math −0.062, code −0.081<br>same tokens, same engine, only 22 layers of experts changed</div></div>
+  <div><div class="n">37.6 / 34.1 / 19.7</div><div class="l">tok/s decode: code / counting / free prose<br>with thinking (DSpark K5 draft)</div></div>
+  <div><div class="n">100 GiB</div><div class="l">weights resident, 28 s warm load,<br>MMLU-Pro 63.2 % (MixedK 64.3 %: tie within noise)</div></div>
 </div>
 <div class="foot">
   <div><b>Built on the work of</b> DeepSeek (weights) · drowzeys (abliteration) · vcruz305 (MixedK pack) · 0xSero (sparkinfer image, tp1 layout) · MiaAI-Lab (recipe) · turboderp (EXL3)<br>
-  Studies in the repo: the FP8 reference (2×Spark), experts-vs-bits with identical weights, the 216-expert engine verified bit-exact, the `)Skip` decode-path token.</div>
+  Studies in the repo: original-precision reference (2×Spark) · experts-vs-bits with identical weights · 216-expert engine verified bit-exact · the `)Skip` token. The 0731 text packs are a different base model: compared only with that caveat.</div>
   <div style="text-align:right"><b>GaelicThunder/DeepSeek-V4-Flash-Vision-One-DGX-Spark</b><br>receipts for every number · 2026-09-07</div>
 </div>

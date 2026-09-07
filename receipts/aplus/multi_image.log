@@ -1,0 +1,14 @@
+# multi-image prompts on MixedK+ (engine direct, temperature 0, thinking off), 2026-09-07 05:40 CEST
+# images: testimg/cat.jpg (Pallas's cat in snow), testimg/shapes.png (red square, blue circle, green triangle), testimg/coco.png (two tabby cats on a pink couch)
+--- 2 images (2.3s) usage=593p/41c
+Image 1: A Pallas's cat walking through snow near birch trees.
+Image 2: A red square, blue circle, and green triangle with text.
+
+Image 1 contains an animal.
+--- 3 images (2.5s) usage=804p/56c
+Image 1: A Pallas's cat walking through snow.
+Image 2: A red square, blue circle, and green triangle.
+Image 3: Two tabby cats sleeping on a pink couch.
+
+Images containing an animal: Image 1 and Image 3.
+# engine log after both requests: no error, warning, NaN or assertion lines.

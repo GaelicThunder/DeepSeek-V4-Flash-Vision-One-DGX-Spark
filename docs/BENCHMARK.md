@@ -8,7 +8,7 @@ same items, same grading code. Raw outputs in `receipts/`.
 | tag | what | serving |
 |---|---|---|
 | `dsvision` | this recipe: vcruz305 MixedK, 256 experts, K2 + six K3 layers, vision, abliteration baked into 26 `wo_b` tensors | sparkinfer image + overlay, `MODE=dspark`, util 0.88 (the first run of the day was at 0.86; quality is identical, deterministic) |
-| `dsflash` | MiaAI-Lab recipe: 0xSero REAP-K216, uniform 3-bit, text | same image, `MODE=dspark`, util 0.925, runtime refusal-ablation hook on (`DSFLASH_ABLATE=1`, λ 3.5, layers 10–42) — its daily-driver default |
+| `dsflash` | MiaAI-Lab recipe: 0xSero REAP-K216, uniform 3-bit, text — **a different base model** (DeepSeek-V4-Flash-0731, not Vision-Exp): deployment comparison, not a quantization comparison | same image, `MODE=dspark`, util 0.925, runtime refusal-ablation hook on (`DSFLASH_ABLATE=1`, λ 3.5, layers 10–42) — its daily-driver default |
 | `dsflash-noabl` | same as `dsflash` with the runtime ablation hook off | util 0.92 |
 
 Both run at `max_model_len 245760`. `dsvision` was run twice (`bench-dsvision-20260903.json`,
