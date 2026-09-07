@@ -1,34 +1,34 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>MixedK+ banner</title>
+<title>Kalibrated Vision Exp header</title>
 <style>
   :root { --bg:#0e1116; --fg:#e6e9ef; --dim:#8b93a3; --line:#252b36; --acc:#7fd3a4; --acc2:#d9b46a; --red:#e07a6a; }
   html,body { margin:0; background:var(--bg); }
-  body { width:1200px; height:675px; color:var(--fg); font-family:"Fira Code","Cascadia Code","DejaVu Sans Mono",monospace;
-         display:flex; flex-direction:column; box-sizing:border-box; padding:44px 64px 30px; position:relative; overflow:hidden; }
+  body { width:1500px; height:500px; color:var(--fg); font-family:"Fira Code","Cascadia Code","DejaVu Sans Mono",monospace;
+         display:flex; flex-direction:column; box-sizing:border-box; padding:28px 64px 20px; position:relative; overflow:hidden; }
   body:before { content:""; position:absolute; inset:0; background:
      radial-gradient(900px 420px at 88% -10%, rgba(127,211,164,.16), transparent 60%),
      radial-gradient(700px 380px at 5% 110%, rgba(217,180,106,.14), transparent 60%); pointer-events:none; }
   .kicker { font-size:15px; color:var(--dim); letter-spacing:.06em; }
   .kicker b { color:var(--acc); font-weight:500; }
-  h1 { margin:12px 0 6px; font-size:46px; font-weight:600; letter-spacing:-.015em; line-height:1.05; }
+  h1 { margin:8px 0 4px; font-size:38px; font-weight:600; letter-spacing:-.015em; line-height:1.05; }
   h1 em { font-style:normal; color:var(--acc2); }
-  .sub { font-size:17px; color:#b8bfcc; margin:0 0 22px; line-height:1.4; max-width:1060px; }
-  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:0 26px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:20px 0 18px; }
-  .stat .n { font-size:44px; font-weight:600; letter-spacing:-.02em; line-height:1; }
+  .sub { font-size:17px; color:#b8bfcc; margin:0 0 14px; line-height:1.35; max-width:1360px; }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:0 26px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:12px 0 10px; }
+  .stat .n { font-size:36px; font-weight:600; letter-spacing:-.02em; line-height:1; }
   .stat .n em { font-style:normal; font-size:20px; color:var(--dim); font-weight:400; margin-left:4px; }
   .stat .l { font-size:13.5px; color:var(--dim); margin-top:8px; line-height:1.35; }
   .g { color:var(--acc); } .y { color:var(--acc2); }
-  .row2 { display:grid; grid-template-columns:repeat(4,1fr); gap:0 26px; padding:18px 0 0; }
-  .row2 .n { font-size:25px; font-weight:600; letter-spacing:-.01em; }
+  .row2 { display:grid; grid-template-columns:repeat(4,1fr); gap:0 26px; padding:10px 0 0; }
+  .row2 .n { font-size:23px; font-weight:600; letter-spacing:-.01em; }
   .row2 .l { font-size:12.5px; color:var(--dim); margin-top:5px; line-height:1.35; }
-  .foot { margin-top:auto; padding-top:12px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-end; font-size:12px; color:var(--dim); line-height:1.45; }
+  .foot { margin-top:auto; padding-top:9px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-end; font-size:12px; color:var(--dim); line-height:1.45; }
   .foot b { color:#b8bfcc; font-weight:500; }
 </style>
 <div class="kicker">DeepSeek-V4-Flash-Vision-Exp · EXL3 · <b>one DGX Spark</b> (GB10, 128 GB unified) · text + images · 245k context</div>
-<h1>MixedK+ — <em>3-bit where it matters</em></h1>
-<p class="sub">DeepSeek-V4-Flash-<b>Vision-Exp</b> (abliterated), all 256 experts, 28 of 43 expert layers at 3-bit instead of 6, picked by measured quantization
-error and re-quantized from the original weights. Keeps <b>90 %</b> of the original model's token probability; the 2-bit MixedK it replaces kept 81 %.</p>
+<h1>Kalibrated Vision Exp — <em>3-bit where it matters</em></h1>
+<p class="sub">DeepSeek-V4-Flash-<b>Vision-Exp</b> (abliterated), built on vcruz305's MixedK pack: all 256 experts kept, 28 of 43 expert layers at calibrated 3-bit instead of 6, picked by
+measured quantization error. Keeps <b>90 %</b> of the original model's token probability; the 2-bit MixedK it extends keeps 81 %.</p>
 <div class="stats">
   <div class="stat"><div class="n g">87<em>%</em></div><div class="l">of the original on prose<br>(MixedK 76 % · REAP-216 3-bit 57 %)</div></div>
   <div class="stat"><div class="n g">99.8<em>%</em></div><div class="l">of the original on math<br>(MixedK 94 % · REAP-216 3-bit 98 %)</div></div>
@@ -42,7 +42,7 @@ error and re-quantized from the original weights. Keeps <b>90 %</b> of the origi
   <div><div class="n">100 GiB</div><div class="l">weights resident, 28 s warm load,<br>MMLU-Pro 63.2 % (MixedK 64.3 %: tie within noise)</div></div>
 </div>
 <div class="foot">
-  <div><b>Built on the work of</b> DeepSeek (weights) · drowzeys (abliteration) · vcruz305 (MixedK pack) · 0xSero (sparkinfer image, tp1 layout) · MiaAI-Lab (recipe) · turboderp (EXL3)<br>
+  <div><b>Built on</b> vcruz305's MixedK pack · DeepSeek (weights) · drowzeys (abliteration) · 0xSero (sparkinfer image, tp1 layout) · MiaAI-Lab (recipe) · turboderp (EXL3)<br>
   Studies in the repo: original-precision reference (2×Spark) · experts-vs-bits with identical weights · 216-expert engine verified bit-exact · the `)Skip` token. The 0731 text packs are a different base model: compared only with that caveat.</div>
-  <div style="text-align:right"><b>GaelicThunder/DeepSeek-V4-Flash-Vision-One-DGX-Spark</b><br>receipts for every number · 2026-09-07</div>
+  <div style="text-align:right; white-space:nowrap; padding-left:24px"><b>github.com/GaelicThunder/<br>DeepSeek-V4-Flash-Vision-One-DGX-Spark</b><br>receipts for every number · 2026-09-07</div>
 </div>

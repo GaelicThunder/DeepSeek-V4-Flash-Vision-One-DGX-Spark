@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Figures for the MixedK+ release (dark theme of assets/card.html).
+"""Figures for the Kalibrated Vision Exp release (dark theme of assets/card.html).
 
 Every number is a paired per-token NLL difference against the ORIGINAL-precision release of the same model
 (DeepSeek-V4-Flash-Vision-Exp, abliterated by drowzeys; FP8 attention, MXFP4 experts; served on two Sparks) on the
@@ -11,7 +11,7 @@ so 100 % is the original model itself. The 0xSero/MiaAI-Lab pack is a DIFFERENT 
 its bar is measured against the Vision-Exp original and therefore mixes model difference with quantization. It is
 drawn hatched and must not be read as a quantization comparison.
 
-    tools/plot_aplus.py                 # all figures into assets/aplus/
+    tools/plot_kalibrated.py                 # all figures into assets/kalibrated/
 """
 import argparse, math, os
 import matplotlib
@@ -33,15 +33,15 @@ DOMAINS = ["prose (wikitext)", "math (gsm8k)", "code", "all 64,859 tokens"]
 
 # name, nats above the original (wikitext, gsm8k, code, all), colour, hatch (None = same model), note
 PACKS = [
-    ("MixedK+  (current: 256 experts, 3-bit on 28 layers)", (0.1374, 0.0023, 0.0812, 0.1034), WHITE, None),
-    ("MixedK  (vcruz305: 256 experts, 3-bit on 6 layers) — served until 09-07", (0.271, 0.064, 0.162, 0.213), GREEN, None),
-    ("REAP-216 3-bit  (this repo's build: 216 experts, all 3-bit)", (0.562, 0.025, 0.067, 0.354), GOLD, None),
+    ("Kalibrated Vision Exp  (this pack: 256 experts, 3-bit on 28 layers)", (0.1374, 0.0023, 0.0812, 0.1034), WHITE, None),
+    ("MixedK  (vcruz305: 256 experts, 3-bit on 6 layers; the pack Kalibrated is built on)", (0.271, 0.064, 0.162, 0.213), GREEN, None),
+    ("REAP-216 3-bit  (this repo's build of the same model: 216 experts, all 3-bit)", (0.562, 0.025, 0.067, 0.354), GOLD, None),
     ("2-bit pruned to 216  (ablation: MixedK experts, REAP keep list)", (0.649, 0.086, 0.171, 0.442), RED, None),
     ("0731 REAP-216 3-bit  (0xSero / MiaAI-Lab) — DIFFERENT base model, text", (0.647, 0.090, 0.063, 0.412), GREY, "//"),
 ]
 MIXEDK, MIXEDK_PLUS, REAP, PACK_E = PACKS[1][1], PACKS[0][1], PACKS[2][1], PACKS[3][1]
 VIS3P = (0.566, 0.027, 0.065, 0.357)   # REAP-216 3-bit re-quantized from the unpruned source (= the REAP build)
-SE_PLUS = (0.0051, 0.0078, 0.0053, 0.0151)  # SE of the MixedK+ vs MixedK paired deltas (tokens; chunks for "all")
+SE_PLUS = (0.0051, 0.0078, 0.0053, 0.0151)  # SE of the Kalibrated vs MixedK paired deltas (tokens; chunks for "all")
 PROXY_ERR = {0: 0.00771, 1: 0.00954, 2: 0.00615, 3: 0.00573, 4: 0.00455, 5: 0.00581, 6: 0.00632, 7: 0.00629, 8: 0.00884,
              9: 0.00774, 10: 0.00559, 11: 0.00791, 12: 0.00776, 13: 0.00734, 14: 0.00482, 15: 0.0061, 16: 0.00661,
              17: 0.00626, 18: 0.00443, 19: 0.00861, 20: 0.00513, 21: 0.00808, 22: 0.0087, 23: 0.01116, 24: 0.00821,
@@ -86,7 +86,7 @@ def fig_plus_vs_mixedk(out):
     kept_plus = [retained(a) for a in MIXEDK_PLUS]; kept_k = [retained(v) for v in MIXEDK]
     xs = np.arange(4)
     ax.bar(xs - 0.19, kept_k, 0.36, color=GREEN, edgecolor=BG, label="MixedK (2-bit, 6 layers at 3-bit)")
-    ax.bar(xs + 0.19, kept_plus, 0.36, color=WHITE, edgecolor=BG, label="MixedK+ (28 layers at 3-bit)")
+    ax.bar(xs + 0.19, kept_plus, 0.36, color=WHITE, edgecolor=BG, label="Kalibrated Vision Exp (28 layers at 3-bit)")
     for i in range(4):
         ax.text(xs[i] - 0.19, kept_k[i] + 0.6, f"{kept_k[i]:.1f}", ha="center", fontsize=9, color=GREEN)
         ax.text(xs[i] + 0.19, kept_plus[i] + 0.6, f"{kept_plus[i]:.1f}", ha="center", fontsize=9, color=WHITE)
@@ -94,9 +94,9 @@ def fig_plus_vs_mixedk(out):
     ax.axhline(100, color=FG, linewidth=0.9)
     ax.set_xticks(xs); ax.set_xticklabels(DOMAINS)
     ax.set_ylim(40, 106); ax.set_ylabel("token probability kept, % of the original")
-    ax.set_title("MixedK+ against the pack it replaces, on the same tokens", fontsize=12.5, pad=12)
+    ax.set_title("Kalibrated Vision Exp against the MixedK pack it is built on, on the same tokens", fontsize=12.5, pad=12)
     ax.legend(loc="lower right", fontsize=9)
-    credit(fig, "same 64,859 tokens, same engine, same everything but 22 layers of expert tensors · receipts/nll/")
+    credit(fig, "same 64,859 tokens, same engine, same everything but 22 layers of expert tensors (the K is MixedK's) · receipts/nll/")
     fig.tight_layout(rect=(0, 0.035, 1, 1)); fig.savefig(out, dpi=200); plt.close(fig)
 
 
@@ -127,8 +127,8 @@ def fig_layer_ranking(out):
     ax.bar(layers, [e * 1000 for e in errs], 0.78, color=cols, edgecolor=BG)
     ax.set_xticks(layers); ax.set_xticklabels([str(L) for L in layers], fontsize=8)
     ax.set_xlabel("decoder layer"); ax.set_ylabel("mean quantization error of the layer's\n768 expert tensors at 3-bit  (×1000)")
-    ax.set_title("Where 2-bit hurts most, and which layers MixedK+ lifts to 3-bit", fontsize=12.5, pad=12)
-    ax.legend(handles=[Patch(color=GOLD, label="lifted to 3-bit in MixedK+ (22 layers, all 256 experts)"),
+    ax.set_title("Where 2-bit hurts most, and which layers Kalibrated Vision Exp lifts to 3-bit", fontsize=12.5, pad=12)
+    ax.legend(handles=[Patch(color=GOLD, label="lifted to 3-bit in Kalibrated (22 layers, all 256 experts, calibrated)"),
                        Patch(color=GREEN, label="already 3-bit in vcruz305's MixedK (6 layers)"),
                        Patch(color=BLUE, label="converted too, but the 26-layer pack leaves no room for the KV cache (4)"),
                        Patch(color=DIM, label="stays 2-bit (15 layers)")], loc="upper left", fontsize=8.4)
@@ -138,14 +138,14 @@ def fig_layer_ranking(out):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "assets", "aplus"))
+    ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "assets", "kalibrated"))
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
-    for stale in ("ppl_vs_source.png", "aplus_vs_vis.png"):
+    for stale in ("ppl_vs_source.png", "aplus_vs_vis.png", "mixedk_plus_vs_mixedk.png"):
         p = os.path.join(a.out, stale)
         if os.path.exists(p): os.remove(p)
     fig_retention(os.path.join(a.out, "retention.png"))
-    fig_plus_vs_mixedk(os.path.join(a.out, "mixedk_plus_vs_mixedk.png"))
+    fig_plus_vs_mixedk(os.path.join(a.out, "kalibrated_vs_mixedk.png"))
     fig_prune_vs_bits(os.path.join(a.out, "prune_vs_bits.png"))
     fig_layer_ranking(os.path.join(a.out, "layer_ranking.png"))
     print("retained (%), all tokens:", {n.split("  ")[0]: round(retained(v[3]), 1) for n, v, _, _ in PACKS})

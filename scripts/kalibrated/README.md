@@ -1,4 +1,6 @@
-# scripts/aplus — how the A+ layers were made
+# scripts/kalibrated — how the Kalibrated 3-bit layers were made
+
+(`aplus` / `A+` in the file names and logs is the build's working name; the released pack is Kalibrated Vision Exp.)
 
 Pod side (2×H200, exllamav3 0531096 + `exl3-conversion.patch`, run in this order):
 `setup.sh` (source download + build) → `chain_aplus.sh` (view, per-tensor recipe with 3-bit on the chosen layers,

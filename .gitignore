@@ -4,3 +4,4 @@ __pycache__/
 *.bak*
 *.tmp
 assets/*.tmp.*
+.run/

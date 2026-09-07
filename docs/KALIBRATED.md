@@ -1,11 +1,16 @@
-# MixedK+ (working name A+) — all 256 experts, 3-bit where it matters
+# Kalibrated Vision Exp — all 256 experts, 3-bit where it matters
+
+**Kalibrated Vision Exp** (short: *Kalibrated*) is vcruz305's MixedK pack of DeepSeek-V4-Flash-Vision-Exp with 22 more
+expert layers re-quantized at a *calibrated* 3-bit. The name says what it is: the K is MixedK's, the "calibrated" is the
+part this repository adds. It was built as an extension of that pack, not as a replacement for it — 15 of its 43 expert
+layers, every non-expert tensor, the vision tower and the draft plan are vcruz305's files, unchanged.
 
 *Built and measured 2026-09-06/07 on one DGX Spark (GB10, 128 GB) plus five hours of a 2×H200 pod. Every number
-below has a receipt in [`receipts/nll/`](../receipts/nll/) or [`receipts/aplus/`](../receipts/aplus/).*
+below has a receipt in [`receipts/nll/`](../receipts/nll/) or [`receipts/kalibrated/`](../receipts/kalibrated/).*
 
-## 1. What MixedK+ is
+## 1. What Kalibrated is, tensor by tensor
 
-| | MixedK (vcruz305; served until 09-07) | REAP-216 3-bit (same model, this repo) | **MixedK+** |
+| | MixedK (vcruz305; the pack Kalibrated is built on) | REAP-216 3-bit (same model, this repo) | **Kalibrated Vision Exp** |
 |---|---|---|---|
 | routed experts per layer | 256 | 216 (40 pruned by the REAP plan) | **256** |
 | expert bits | 2-bit on 37 layers, 3-bit on 6 | 3-bit on all 43 | **3-bit on 28 layers, 2-bit on 15** |
@@ -22,7 +27,7 @@ Vision-Exp pack.
 The 22 promoted layers are `27 23 31 35 32 34 37 40 1 39 25 29 8 30 19 26 24 11 12 9 0 42`, in ranking order; with
 the MixedK pack's own six (`3 13 21 22 28 41`) that makes 28 of 43. The remaining 15 layers keep the MixedK 2-bit
 tensors untouched. Promoting a layer costs 0.75 GiB (256 experts × 3 MiB); 26 promoted layers load fine but leave
-0.63 GiB of KV against the 3.91 GiB one 245,760-token request needs, so the served pack stops at 22. MixedK+ is, structurally, a MixedK: same EXL3 trellis format, same `mcg`
+0.63 GiB of KV against the 3.91 GiB one 245,760-token request needs, so the served pack stops at 22. Kalibrated is, structurally, a MixedK: same EXL3 trellis format, same `mcg`
 codebook, same tp1 layout and non-expert tensors as vcruz305's pack, only with 28 layers at 3-bit instead of 6 —
 and its 3-bit layers are calibrated (the MixedK pack's six carry a constant relative error per tensor, the
 signature of exllamav3's uncalibrated fallback; swapping them for calibrated ones changed nothing measurable).
@@ -34,7 +39,7 @@ path, the same items for every pack. The reference is the full-precision FP8 che
 
 | nats above the original (paired) → % of its token probability kept | prose | math | code | all |
 |---|---|---|---|---|
-| **MixedK+** | **+0.137 → 87 %** | **+0.002 → 99.8 %** | **+0.081 → 92 %** | **+0.103 → 90 %** |
+| **Kalibrated** | **+0.137 → 87 %** | **+0.002 → 99.8 %** | **+0.081 → 92 %** | **+0.103 → 90 %** |
 | MixedK (vcruz305) | +0.271 → 76 % | +0.064 → 94 % | +0.162 → 85 % | +0.213 → 81 % |
 | REAP-216 3-bit (this repository's build) | +0.562 → 57 % | +0.025 → 98 % | +0.067 → 94 % | +0.354 → 70 % |
 | 2-bit pruned to 216 (pack E, §3) | +0.649 → 52 % | +0.086 → 92 % | +0.171 → 84 % | +0.442 → 64 % |
@@ -45,22 +50,22 @@ text pack, scored against the *Vision-Exp* original on the same tokens, sits at 
 (52 / 91 / 94 / 66 %). It is a different base model, so that row mixes the 0731↔Vision-Exp difference with its
 quantization loss and says nothing about either alone; it is in the figures hatched for that reason.
 
-| MixedK+ against MixedK, paired | prose | math | code |
+| Kalibrated against MixedK, paired | prose | math | code |
 |---|---|---|---|
-| Δ nats (negative = MixedK+ better) | **−0.133** | **−0.062** | **−0.081** |
+| Δ nats (negative = Kalibrated better) | **−0.133** | **−0.062** | **−0.081** |
 | SE over tokens | 0.005 | 0.008 | 0.005 |
 | as perplexity | −12.5 % | −6.0 % | −7.8 % |
 
-Other gates, MixedK+ vs MixedK: perplexity on 8 fixed passages 4.487 vs 4.545; MMLU-Pro (251 items, two option
+Other gates, Kalibrated vs MixedK: perplexity on 8 fixed passages 4.487 vs 4.545; MMLU-Pro (251 items, two option
 orders, letter logprob) 63.2 % vs 64.3 % — the harness noise is ±1 item per run, so this is a tie; decode 37.6 / 34.1
 / 19.7 tok/s on code / counting / free prose with thinking vs 37.5 / 37.3 / 21.8 (medians of 3); verify steps 10.4–10.5
 per second vs 11.4 — the promoted layers read 1.5× the bytes, and the step is bandwidth-bound.
 
-![MixedK+ vs MixedK](../assets/aplus/mixedk_plus_vs_mixedk.png)
+![Kalibrated vs MixedK](../assets/kalibrated/kalibrated_vs_mixedk.png)
 
-Also checked on MixedK+: two- and three-image prompts (correct per-image descriptions, no engine errors,
-[`receipts/aplus/multi_image.log`](../receipts/aplus/multi_image.log)); the `)Skip` seeded slot still flips on the
-decode path, p 0.15 vs 0.65 on MixedK ([`receipts/aplus/skip_slot_check.log`](../receipts/aplus/skip_slot_check.log)) —
+Also checked on Kalibrated: two- and three-image prompts (correct per-image descriptions, no engine errors,
+[`receipts/kalibrated/multi_image.log`](../receipts/kalibrated/multi_image.log)); the `)Skip` seeded slot still flips on the
+decode path, p 0.15 vs 0.65 on MixedK ([`receipts/kalibrated/skip_slot_check.log`](../receipts/kalibrated/skip_slot_check.log)) —
 weaker, not cured, the `bad_words` mask stays.
 
 ## 3. Experts versus bits, with the same weights
@@ -83,9 +88,9 @@ moves:
 
 On math and code the same decomposition reads +0.022 / +0.009 for the prune and −0.059 / −0.106 for the bits. So the
 REAP plan — calibrated on agentic and tool-calling traffic — removes experts that prose needs (rare names, first
-occurrences), and 3-bit helps everywhere once the experts are kept. That is the whole design of MixedK+.
+occurrences), and 3-bit helps everywhere once the experts are kept. That is the whole design of Kalibrated.
 
-![experts vs bits](../assets/aplus/prune_vs_bits.png)
+![experts vs bits](../assets/kalibrated/prune_vs_bits.png)
 
 ### A retraction
 
@@ -112,15 +117,15 @@ of its scratch arena — clone it before the next call, or every earlier result 
 
 The conversion log of the 3-bit REAP build reports, for every expert tensor, the error of the quantized weight measured
 on the calibration activations (`proxy_err`). Averaged over the 768 tensors of a layer it says how much a layer
-amplifies quantization error — a proxy for where 2-bit hurts most. MixedK+ promotes the top of that ranking (excluding the
+amplifies quantization error — a proxy for where 2-bit hurts most. Kalibrated promotes the top of that ranking (excluding the
 six layers the MixedK pack already holds at 3-bit); the six MixedK layers sit in the middle of the same ranking, which
 is consistent with them having been chosen by some other rule. Under a linear share of the measured bits gain the 22
 layers were expected to give about −0.05 nats on prose; they gave −0.133, so the ranking is picking sensitive layers
 rather than random ones. Picking them by measurement (swap blocks of layers, one boot each) is the next step.
 
-![layer ranking](../assets/aplus/layer_ranking.png)
+![layer ranking](../assets/kalibrated/layer_ranking.png)
 
-## 6. How it was built (reproducible from `scripts/aplus/`)
+## 6. How it was built (reproducible from `scripts/kalibrated/`; `aplus` in the file names is the build's working name)
 
 1. **Convert on a pod** (`setup.sh`, `chain_aplus.sh`): exllamav3 0531096 with the conversion patches in
    `exl3-conversion.patch`, the abliterated source from the Hub (157 GB, gated), a full-model view, a per-tensor
@@ -139,9 +144,28 @@ rather than random ones. Picking them by measurement (swap blocks of layers, one
 4. **Boot ladder** (`boot_aplus.sh`): try N = 22, 21, 20 at `UTIL=0.925` (never above 0.93 on a 128 GB Spark), then the
    battery: paired NLL vs the 2-bit pack and vs the FP8 reference, the 8-passage perplexity, MMLU-Pro, dsbench.
 
-## 7. Credits
+## 7. Why not the other two routes
 
-DeepSeek for DeepSeek-V4-Flash-Vision-Exp; drowzeys for the abliteration the source carries; vcruz305 for the MixedK
-pack MixedK+ is built on; 0xSero for the sparkinfer image, the rank-sliced tp1 layout and the REAP-K216 keep list;
-MiaAI-Lab for the single-Spark recipe (and the one-command install this repo now mirrors); turboderp for EXL3 and a converter that takes a per-tensor recipe and resumes
-from a checkpoint. Measured and written up on an ASUS Ascent GX10 by GaelicThunder.
+*Why more than MixedK's six 3-bit layers.* vcruz305 serves his pack on PyPI vLLM nightly with a plugin: non-expert
+tensors in BF16, `enforce-eager`, a 65k verified context. On that stack six 3-bit layers is what the memory allows, and
+the six were not calibrated (constant relative error per tensor, exllamav3's fallback). The stack used here — the
+0xSero sparkinfer image with the non-expert tensors in FP8 and CUDA graphs — frees roughly 16 GiB, and this repository
+spends them on 22 more expert layers at calibrated 3-bit rather than on a bigger KV pool (269k tokens instead of 986k;
+one request of 245,760 tokens still fits). Nothing in that is a shortcoming of MixedK: it is the same pack with a
+different memory budget.
+
+*Why not the 0xSero/MiaAI-Lab route (prune to 216 experts, 3-bit everywhere).* Measured on this model with byte-identical
+weights (§3), pruning the 40 REAP experts costs 76 → 52 % of the original's token probability on prose, and 3-bit on the
+216 that remain gives back 52 → 57 %; keeping 256 experts and spending the bits on the sensitive layers gives 87 %. A
+256-expert pack at 3-bit on all 43 layers would be ~111 GiB of expert tensors and does not leave room for a KV cache on
+128 GB.
+
+## 8. Credits
+
+vcruz305 for the MixedK pack this is built on — the 2-bit experts, the non-expert tensors, the vision tower, the six
+3-bit layers and the draft plan are his files — and for the parallel recipe that found the same `load_weights` bug the
+same day; DeepSeek for DeepSeek-V4-Flash-Vision-Exp; drowzeys for the abliteration the source carries; 0xSero for the
+sparkinfer image, the rank-sliced tp1 layout and the REAP-K216 keep list; MiaAI-Lab for the single-Spark recipe (and the
+one-command install this repo mirrors); turboderp for EXL3 and a converter that takes a per-tensor recipe and resumes
+from a checkpoint. If vcruz305 wants the 22 layer files folded into the MixedK pack itself, they are his to take: same
+format, same layout, same license. Measured and written up on an ASUS Ascent GX10 by GaelicThunder.

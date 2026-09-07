@@ -11,29 +11,37 @@ uses for the text model, with the vision model support of vLLM
 [PR #54566](https://github.com/vllm-project/vllm/pull/54566) ported onto that image as a read-only overlay.
 No image rebuild, no CUDA compile: every kernel involved is Triton.
 
-Everything below was measured on 2026-09-03 on one machine. The raw outputs are in [`receipts/`](receipts/).
+Two packs run on it. **Kalibrated Vision Exp** (the default since 2026-09-07) is vcruz305's MixedK with 22 more expert
+layers at a calibrated 3-bit, ready to serve as a download; the **MixedK route** downloads vcruz305's pack and converts
+it on the Spark. Everything was measured on one machine; the raw outputs are in [`receipts/`](receipts/).
 
-| | measured |
-|---|---|
-| context | **245,760** tokens per request |
-| KV pool | **986,275** tokens at `gpu_memory_utilization 0.88` (4.01 requests of full length) |
-| weights resident | 83.58 GiB (`Model loading took`) |
-| decode, DSpark K5 draft | **35.3 tok/s** code · 36.0 counting · **23.3 tok/s** free prose with thinking (medians of 3) |
-| prefill | 1,239 / 1,198 / 1,130 tok/s at 16k / 64k / 128k prompt (salted, no prefix-cache hits) |
-| images | yes — same process, same endpoint (`/v1/chat/completions` with `image_url`) |
-| CUDA graphs | captured (PIECEWISE + FULL), not `enforce-eager` |
-| load | ~2 min cold from NVMe, 25 s with a warm page cache; the first boot compiles ~10 min of kernels into `cache/` |
-| MMLU-Pro (251 items, 10-way, letter logprob) | **64.3 %** — vs 60.8 % for the 3-bit REAP-pruned text recipe on the same items |
+| | **Kalibrated Vision Exp** (2026-09-07) | MixedK route (2026-09-03) |
+|---|---|---|
+| context | **245,760** tokens per request | 245,760 |
+| KV pool | 269,471 tokens at `UTIL=0.925` (one full-length request) | **986,275** tokens at `UTIL=0.88` (four) |
+| weights resident (`Model loading took`) | 100.08 GiB | 83.58 GiB |
+| token probability kept of the original model, 64,859 tokens | **90 %** (prose 87 · math 99.8 · code 92) | 81 % (76 · 94 · 85) |
+| decode, DSpark K5 draft (medians of 3) | **37.6 tok/s** code · 34.1 counting · 19.7 free prose with thinking | 35.3 · 36.0 · **23.3** |
+| prefill (salted, no prefix-cache hits) | same engine, not re-measured | 1,239 / 1,198 / 1,130 tok/s at 16k / 64k / 128k prompt |
+| images | yes — same process, same endpoint; 1 to 3 images per prompt verified | yes |
+| CUDA graphs | captured (PIECEWISE + FULL), not `enforce-eager` | same |
+| load | 28 s with a warm page cache | ~2 min cold from NVMe, 25 s warm; the first boot compiles ~10 min of kernels into `cache/` |
+| MMLU-Pro (251 items, 10-way, letter logprob) | 63.2 % | **64.3 %** (a tie: the harness noise is ±1 item) — vs 60.8 % for the 0731 3-bit REAP text recipe, a different base model |
+| `)Skip`, the token the decode path invents | masked for every request by the proxy `start.sh` puts in front | same |
 
-## MixedK+ — all 256 experts, 3-bit where it matters (2026-09-07)
+## Kalibrated Vision Exp — all 256 experts, 3-bit where it matters (2026-09-07)
 
-![MixedK+](assets/aplus/banner.png)
+![Kalibrated Vision Exp](assets/kalibrated/banner.png)
 
-**MixedK+** is the pack this repository serves now. It is vcruz305's MixedK — DeepSeek-V4-Flash-**Vision-Exp**,
-abliterated by drowzeys, 256 experts, 2-bit with 6 layers at 3-bit — with **22 more expert layers lifted to 3-bit**
-(28 of 43), all 256 experts of each re-quantized from the original weights, the layers picked by their measured
-quantization error. Everything else — attention, indexer, shared experts, router, head, vision tower, DSpark draft —
-is the MixedK pack's own tensors. Same format, same layout, same engine; it is a MixedK with more K3.
+**Kalibrated Vision Exp** (short: Kalibrated) is the pack this repository serves by default. It is built on
+[vcruz305's MixedK pack](https://huggingface.co/vcruz305/DSV4-Flash-Vision-ablit-EXL3-MixedK) — DeepSeek-V4-Flash-**Vision-Exp**,
+abliterated by drowzeys, 256 experts, 2-bit with 6 layers at 3-bit — and adds **22 more expert layers at a calibrated
+3-bit** (28 of 43), all 256 experts of each re-quantized from the original weights, the layers picked by their measured
+quantization error. Everything else — the other 15 expert layers, attention, indexer, shared experts, router, head,
+vision tower, the DSpark draft plan — is the MixedK pack's own files, unchanged. Same format, same layout, same engine:
+the K in the name is MixedK's, the "calibrated" is what this repository adds. Ready to serve as a download:
+[`GaelicThunder/DeepSeek-V4-Flash-Vision-Exp-ablit-EXL3-Kalibrated`](https://huggingface.co/GaelicThunder/DeepSeek-V4-Flash-Vision-Exp-ablit-EXL3-Kalibrated)
+(106 GB: the `tp1/` and `dspark-draft-k64/` directories `scripts/serve.sh` mounts).
 
 **How much of the original model each pack keeps.** The number is the geometric mean, over 64,859 frozen tokens
 (wikitext · gsm8k · code), of the probability the pack gives the true next token divided by the probability the
@@ -42,17 +50,27 @@ served on two Sparks. 100 % is the original itself.
 
 | % of the original's token probability | prose (wikitext) | math (gsm8k) | code | all tokens |
 |---|---|---|---|---|
-| **MixedK+** (this release) | **87 %** | **99.8 %** | **92 %** | **90 %** |
-| MixedK (vcruz305; served here until 09-07) | 76 % | 94 % | 85 % | 81 % |
+| **Kalibrated Vision Exp** (this release) | **87 %** | **99.8 %** | **92 %** | **90 %** |
+| MixedK (vcruz305; the pack Kalibrated is built on, served here until 09-07) | 76 % | 94 % | 85 % | 81 % |
 | REAP-216 3-bit (this repo's build of the same model, 216 experts) | 57 % | 98 % | 94 % | 70 % |
 | 2-bit pruned to 216 (ablation: MixedK's experts, REAP keep list) | 52 % | 92 % | 84 % | 64 % |
 
-Paired on the same tokens, MixedK+ − MixedK is −0.133 ± 0.005 nats on prose, −0.062 ± 0.008 on math and
+Paired on the same tokens, Kalibrated − MixedK is −0.133 ± 0.005 nats on prose, −0.062 ± 0.008 on math and
 −0.081 ± 0.005 on code: the first single-Spark pack of this model that improves on the 2-bit one in every domain.
 The 0731 text packs (0xSero / MiaAI-Lab) are **a different base model** and are deliberately not in this table;
-the cross-model comparison, with its caveat, is in [`docs/APLUS.md`](docs/APLUS.md#2-results).
+the cross-model comparison, with its caveat, is in [`docs/KALIBRATED.md`](docs/KALIBRATED.md#2-results).
 
-| MixedK+ on one GB10 | measured |
+**Why it does better than the two packs it is compared with.** MixedK's six 3-bit layers are what vcruz305's serving
+stack (PyPI vLLM + plugin, BF16 non-expert tensors, `enforce-eager`) leaves room for, and they are not calibrated. On
+the sparkinfer image, with the non-expert tensors in FP8 and CUDA graphs, about 16 GiB more are free, and Kalibrated
+spends them on 22 calibrated 3-bit layers rather than on a bigger KV pool (269k tokens instead of 986k; one request of
+245,760 tokens still fits). The 0731 text recipe (0xSero / MiaAI-Lab) gets 3-bit everywhere by pruning 40 of the 256
+experts; measured on this model with byte-identical weights, that pruning costs 76 → 52 % of the original on prose and
+3-bit on the remaining 216 gives back 52 → 57 %, while keeping the experts and spending the bits on the sensitive layers
+gives 87 %. A 256-expert pack at 3-bit on all 43 layers (~111 GiB of experts) would not leave room for a KV cache.
+Details: [`docs/KALIBRATED.md`](docs/KALIBRATED.md#7-why-not-the-other-two-routes).
+
+| Kalibrated Vision Exp on one GB10 | measured |
 |---|---|
 | weights resident | 100.08 GiB (`Model loading took`), 28 s warm load |
 | context | 245,760 per request, KV pool 269,471 tokens at `UTIL=0.925` (26 promoted layers leave 0.63 GiB of KV and do not boot) |
@@ -60,16 +78,16 @@ the cross-model comparison, with its caveat, is in [`docs/APLUS.md`](docs/APLUS.
 | verify steps | 10.4–10.5 /s (MixedK 11.4): the extra 3-bit bytes cost ~8 % per step |
 | MMLU-Pro, 251 items, two option orders | 63.2 % (MixedK 64.3 %; the harness noise is ±1 item: a tie) |
 | perplexity, 8 fixed passages | 4.487 (MixedK 4.545) |
-| images, 2 and 3 per prompt | correct per-image descriptions, no engine errors ([`receipts/aplus/multi_image.log`](receipts/aplus/multi_image.log)) |
+| images, 2 and 3 per prompt | correct per-image descriptions, no engine errors ([`receipts/kalibrated/multi_image.log`](receipts/kalibrated/multi_image.log)) |
 | `)Skip` at the seeded slot | still emitted by the decode path, p 0.15 (MixedK 0.65): weaker, **not cured**, keep the `bad_words` mask |
 
 How it was built, why these layers, and the studies behind it — the original-precision reference, *experts versus
 bits* separated with byte-identical weights, the 216-expert engine path verified bit-exact against a float reference,
-and the retraction of an earlier "pruning is free" result — are in [`docs/APLUS.md`](docs/APLUS.md). Figures:
-[`assets/aplus/`](assets/aplus/). Build scripts: [`scripts/aplus/`](scripts/aplus/). Receipts:
-[`receipts/nll/`](receipts/nll/), [`receipts/aplus/`](receipts/aplus/).
+and the retraction of an earlier "pruning is free" result — are in [`docs/KALIBRATED.md`](docs/KALIBRATED.md). Figures:
+[`assets/kalibrated/`](assets/kalibrated/). Build scripts: [`scripts/kalibrated/`](scripts/kalibrated/). Receipts:
+[`receipts/nll/`](receipts/nll/), [`receipts/kalibrated/`](receipts/kalibrated/).
 
-![how much of the original each pack keeps](assets/aplus/retention.png)
+![how much of the original each pack keeps](assets/kalibrated/retention.png)
 
 ## Why this recipe exists
 
@@ -104,7 +122,7 @@ measured is the choice a Spark owner actually has — this recipe against the Mi
 frozen items with identical grading. **They are different base models**: 0xSero's pack is DeepSeek-V4-Flash-0731
 (the text release), this one is DeepSeek-V4-Flash-Vision-Exp (a separate experimental release). The table compares
 two deployments, not two quantizations of one checkpoint; the like-for-like experts-versus-bits accounting on a
-single model is in [`docs/APLUS.md`](docs/APLUS.md#3-experts-versus-bits-with-the-same-weights). The third column is the same 3-bit engine with its runtime refusal-ablation
+single model is in [`docs/KALIBRATED.md`](docs/KALIBRATED.md#3-experts-versus-bits-with-the-same-weights). The third column is the same 3-bit engine with its runtime refusal-ablation
 hook switched off, to check that the hook is not what separates the two.
 
 | | **this recipe** — 2-bit MixedK, 256 experts, vision | MiaAI-Lab/0xSero — 3-bit REAP, 216 experts | same, runtime ablation off |
@@ -124,8 +142,8 @@ On MATH the two engines solve 49 of the same problems and one different geometry
 of the harness itself, measured by repeating this recipe on a second boot: ±1 item.
 
 Keeping all 256 experts costs less than dropping 40 of them and keeping a bit — and, since 2026-09-07, keeping all 256
-*and* lifting the sensitive layers to 3-bit costs less still: see [MixedK+](#mixedk--all-256-experts-3-bit-where-it-matters-2026-09-07)
-and the corrected experts-versus-bits accounting in [`docs/APLUS.md`](docs/APLUS.md#3-experts-versus-bits-with-the-same-weights). Method and per-category
+*and* lifting the sensitive layers to 3-bit costs less still: see [Kalibrated Vision Exp](#kalibrated-vision-exp--all-256-experts-3-bit-where-it-matters-2026-09-07)
+and the corrected experts-versus-bits accounting in [`docs/KALIBRATED.md`](docs/KALIBRATED.md#3-experts-versus-bits-with-the-same-weights). Method and per-category
 numbers: [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
 
 ### Speed, and where the 3-bit recipe is faster
@@ -175,7 +193,7 @@ not just prose.
 
 The mitigation costs nothing and needs no restart — add `"bad_words": [")Skip", ",Skip", ".Skip"]` to your
 requests, or put [`scripts/badwords_proxy.py`](scripts/badwords_proxy.py) in front of the engine if your
-client cannot. `top_p`/`top_k` do not help (the token is already rank 1 in the bad row) and `min_p` /
+client cannot; `start.sh` does the latter by default (proxy on the public port, engine on `ENGINE_PORT`). `top_p`/`top_k` do not help (the token is already rank 1 in the bad row) and `min_p` /
 `logit_bias` are rejected outright under speculative decoding.
 
 Status 2026-09-05: it reproduces with speculation off (`MODE=mtp0`, p 0.27 at the seeded slot), so the verify block
@@ -183,8 +201,8 @@ and the sampler are out; switching the sparse indexer to `native` or the MoE act
 seeded-slot probability bit-identical (0.6473), so the fault sits in the part of the decode path those knobs do not
 touch. A free 400-token run is a lottery (it reports "clean" whenever it never wanders into the trap); the seeded slot
 (`tools/decode_vs_prefill.py`, `tools/token_leak_probe.py --verify-fix`) is the test. The mitigation above is
-unchanged and is what the reference deployment runs at its gateway. On MixedK+ (2026-09-07) the seeded slot still
-flips to `)Skip` on the decode path, at p 0.15 instead of 0.65 ([`receipts/aplus/skip_slot_check.log`](receipts/aplus/skip_slot_check.log)):
+unchanged and is what the reference deployment runs at its gateway. On Kalibrated Vision Exp (2026-09-07) the seeded slot still
+flips to `)Skip` on the decode path, at p 0.15 instead of 0.65 ([`receipts/kalibrated/skip_slot_check.log`](receipts/kalibrated/skip_slot_check.log)):
 different expert weights move the probability, the fault stays.
 
 Full evidence, the exonerated suspects, the remaining kernel A/B and the detector
@@ -195,11 +213,12 @@ without knowing the token id) are in [`docs/DECODE_PATH_TOKEN_LEAK.md`](docs/DEC
 
 - One NVIDIA DGX Spark (GB10 / SM121, 128 GB unified memory). Tested on the ASUS Ascent GX10 build.
 - Docker with the NVIDIA container runtime; the image pulls ~20 GB.
-- Disk: ~95 GB for the pack, ~92 GB for the converted checkpoint + draft. The pack can be deleted after
-  `verify_tp1.py` passes. NVMe for the converted checkpoint (load speed is disk speed).
+- Disk: Kalibrated ~106 GB, ready to serve. MixedK route: ~95 GB for the pack + ~92 GB for the converted checkpoint
+  and draft (the pack can be deleted after `verify_tp1.py` passes). NVMe for the served checkpoint (load speed is disk
+  speed).
 - Host Python 3 with `torch` and `safetensors` for the conversion (CPU only), `datasets` if you want to rerun
   the benchmark, `huggingface_hub` + `hf_xet` for the download.
-- Accept the pack's gated terms on Hugging Face. The model has had its refusals removed; it is published for
+- Neither pack is gated, no Hub token is needed. The model has had its refusals removed; it is published for
   red-teaming, security research and evaluation, and you are responsible for your deployment.
 
 ## Quick start
@@ -209,15 +228,17 @@ One command, like the MiaAI-Lab recipe:
 ```bash
 git clone https://github.com/GaelicThunder/DeepSeek-V4-Flash-Vision-One-DGX-Spark
 cd DeepSeek-V4-Flash-Vision-One-DGX-Spark
-hf auth login          # once: both packs are gated, accept the terms on their model pages
-./start.sh             # download -> convert (MixedK route, ~30 min) -> serve -> waits for /v1/models, prints a test request
+./start.sh             # Kalibrated: download the ready-to-serve pack (106 GB) -> serve -> wait for /v1/models -> print a test request
 ```
 
-`./start.sh` serves vcruz305's MixedK today (95 GB download, conversion on the Spark). MixedK+ becomes a plain
-download — `PACK=plus ./start.sh`, no conversion — as soon as its ready-to-serve pack is on the Hub (`PLUS_REPO`);
-until then `scripts/aplus/` rebuilds it from the source (2×H200, ~4 h; [`docs/APLUS.md`](docs/APLUS.md#6-how-it-was-built)).
-Tunables are environment variables (`CTX`, `UTIL`, `PORT`, `MODELS_DIR`); `./start.sh --no-wait` returns right after
-`docker run`. The steps it wraps, for hand-driving or debugging:
+No token (neither pack is gated), no conversion, no image rebuild. `PACK=mixedk ./start.sh` takes the other route:
+vcruz305's pack (95 GB) converted on the Spark (~30 min), served at `UTIL=0.88` with the four-times-larger KV pool.
+`start.sh` also starts two small helpers: the `bad_words` proxy on the public `PORT` (the engine itself listens on
+`ENGINE_PORT`, default 30031, so every request gets the `)Skip` mask — see below) and
+[`scripts/ramwatch.sh`](scripts/ramwatch.sh), which stops the container if unified memory falls under a floor instead
+of letting the box hard-lock. `PROXY=0` / `RAMWATCH=0` turn them off; `scripts/stop.sh` stops all three. Tunables are
+environment variables (`CTX`, `UTIL`, `PORT`, `MODELS_DIR`); `./start.sh --no-wait` returns right after `docker run`.
+The MixedK route step by step, for hand-driving or debugging:
 
 ```bash
 scripts/download.sh                 # ~95 GB -> ~/models/dsv4-vision-ablit-exl3-mixedk
@@ -299,15 +320,15 @@ With `MODE=dspark` vLLM runs one sequence at a time (`MAX_NUM_SEQS=1`): concurre
 | | [MiaAI-Lab](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-One-DGX-Spark) | [vcruz305](https://github.com/vcruz305/DeepSeek-V4-Flash-Vision-EXL3-MixedK-DGX-Spark-recipe) | this repo |
 |---|---|---|---|
 | model | V4-Flash 0731, text | V4-Flash-Vision-Exp | V4-Flash-Vision-Exp |
-| pack | 0xSero REAP-K216, 3-bit, 95 GB | vcruz305 MixedK, 256 experts, 95 GB | vcruz305 MixedK, converted to tp1 |
+| pack | 0xSero REAP-K216, 3-bit, 95 GB | vcruz305 MixedK, 256 experts, 95 GB | Kalibrated: vcruz305's MixedK + 22 calibrated 3-bit layers, 106 GB (or MixedK converted to tp1) |
 | runtime | sparkinfer image | vLLM nightly (PyPI) + `vllm-exl3` plugin | sparkinfer image + overlay |
 | context | 245,760 | 65,536 verified | 245,760 |
-| KV pool | 255,522 tok (as measured here) | 84,554 @16k · 298–328k @64k | 986,275 @245k |
+| KV pool | 255,522 tok (as measured here) | 84,554 @16k · 298–328k @64k | 269,471 @245k (Kalibrated) · 986,275 (MixedK route) |
 | CUDA graphs | yes | `enforce-eager` | yes |
-| speculative | DSpark K5 | DSpark 3, τ 2.3–3.2 | DSpark K5, τ 3.2 code / 2.1 prose |
-| decode | 46 / 42 / 21 tok/s (count / code / prose) | 19.7 tok/s | 36 / 35 / 23 tok/s |
-| images | no | yes | yes |
-| MMLU-Pro (same 251 items) | 60.8 % | — | 64.3 % |
+| speculative | DSpark K5 | DSpark 3, τ 2.3–3.2 | DSpark K5, τ 3.7 code / 1.9 prose (Kalibrated) · 3.2 / 2.1 (MixedK route) |
+| decode | 46 / 42 / 21 tok/s (count / code / prose) | 19.7 tok/s | 34 / 38 / 20 tok/s (Kalibrated) · 36 / 35 / 23 (MixedK route) |
+| images | no | yes | yes, 1–3 per prompt verified |
+| MMLU-Pro (same 251 items) | 60.8 % | — | 63.2 % (Kalibrated) · 64.3 % (MixedK route); ±1 item noise |
 
 The MiaAI-Lab column is a different base model (V4-Flash-0731, text only): its MMLU-Pro row compares deployments,
 not quantizations of one checkpoint.
@@ -316,38 +337,40 @@ The vcruz305 recipe carries one fix this one does not need: FlashInfer's sparse-
 128-wide rows and the vision model's bidirectional image spans widen them to 512; he slices and recombines with
 log-sum-exp. The encoder here runs on `TORCH_SDPA` and the language side on sparkinfer's own MLA kernels, so the
 path is different. Multi-image prompts were the case to watch: checked on 2026-09-07 with two and three images per
-prompt (MixedK+), each image described correctly and no engine errors
-([`receipts/aplus/multi_image.log`](receipts/aplus/multi_image.log)).
+prompt (Kalibrated), each image described correctly and no engine errors
+([`receipts/kalibrated/multi_image.log`](receipts/kalibrated/multi_image.log)).
 
 ## Repository layout
 
 ```
-start.sh      one command: download -> (convert) -> serve -> wait; PACK=plus once the MixedK+ pack is on the Hub
-scripts/      download.sh · convert.sh · serve.sh · stop.sh · vision_probe.py · ppl_probe.py · speed_probe.py
-              aplus/ (the MixedK+ build: pod conversion, incremental splice, pack assembly, boot ladder)
+start.sh      one command: download -> (convert) -> serve -> proxy + ramwatch -> wait; PACK=kalibrated (default) | mixedk
+scripts/      download.sh · convert.sh · serve.sh · stop.sh · ramwatch.sh · vision_probe.py · ppl_probe.py · speed_probe.py
+              kalibrated/ (the Kalibrated build: pod conversion, incremental splice, pack assembly, boot ladder)
               dsbench.py (speed with τ/α) · bench-ctx.py (salted long-context prefill) · bench/ (MMLU-Pro + MATH-500 harness)
               badwords_proxy.py (drop-in `bad_words` injector, stdlib only)
 overlay/      the 26 files mounted over the image (this is the port)
 tools/        convert_vision_pack.py · add_vision_tensors.py · make_config.py · make_vision_config.py · use_vision.sh
               verify_tp1.py · apply_k2_patch.py (the K-guard edits as a script) · ref_spec.py · make_draft_plan.py
               token_leak_probe.py (prefill-vs-decode logits disagreement detector) · decode_vs_prefill.py
-              plot_aplus.py (the MixedK+ figures) · moe216_test.py / moe216_ref.py / verify_packE.py (engine and pack checks)
+              plot_kalibrated.py (the Kalibrated figures) · moe216_test.py / moe216_ref.py / verify_packE.py (engine and pack checks)
 reference/    ref_spec.json (tensor map of the 0xSero tp1 layout, so you don't need that 99 GB checkpoint)
               0xsero-tp1-config.json · draft_plan.json · the produced config-vision.json and bitrates.json · PR #54566 hunks
 third_party/  MiaAI-Lab recipe files, verbatim, with license and commit
 receipts/     every JSON and log behind the numbers above
-docs/         PORT_NOTES.md · CONVERSION.md · BENCHMARK.md · DECODE_PATH_TOKEN_LEAK.md · APLUS.md (MixedK+ and the studies behind it)
-assets/       card.png · aplus/ (banner, X header, figures)
+docs/         PORT_NOTES.md · CONVERSION.md · BENCHMARK.md · DECODE_PATH_TOKEN_LEAK.md · KALIBRATED.md (Kalibrated Vision Exp and the studies behind it)
+assets/       card.png · kalibrated/ (banner, X header, figures)
 ```
 
 ## Credits
 
-- **DeepSeek** for DeepSeek-V4-Flash-Vision-Exp.
-- **drowzeys** for the anchored abliteration (26 `wo_b` tensors, λ 3.5) and **vcruz305** for quantizing it into the
-  MixedK pack and for the parallel recipe — the same `load_weights` bug found the same day on two continents is the
-  best kind of confirmation.
+- **vcruz305**, first. Kalibrated Vision Exp is his MixedK pack with 22 layers added, and the MixedK route serves his
+  pack as it is: the 2-bit experts, every non-expert tensor, the vision tower, the six original 3-bit layers and the
+  draft plan are his files. His parallel recipe found the same `load_weights` bug the same day on two continents, which
+  is the best kind of confirmation. If he wants the 22 layer files folded into the MixedK pack itself, they are his to
+  take — same format, same layout, same license.
+- **DeepSeek** for DeepSeek-V4-Flash-Vision-Exp; **drowzeys** for the anchored abliteration (26 `wo_b` tensors, λ 3.5).
 - **MiaAI-Lab** for the recipe this one is built on, **0xSero** for the sparkinfer image and the rank-sliced tp1
-  layout and the REAP-K216 keep list, **turboderp** for EXL3 and a converter whose per-tensor recipes made MixedK+ possible.
+  layout and the REAP-K216 keep list, **turboderp** for EXL3 and a converter whose per-tensor recipes made Kalibrated possible.
 - The authors of vLLM PR #54566 for the vision model implementation.
 - Ported, measured and written up on an ASUS Ascent GX10 (DGX Spark) by GaelicThunder.
 

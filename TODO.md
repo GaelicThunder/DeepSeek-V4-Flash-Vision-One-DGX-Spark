@@ -1,11 +1,12 @@
 # TODO
 
-- **Publish the MixedK+ pack.** The ready-to-serve directory (tp1/ + dspark-draft-k64/, ~100 GiB; or just the 22
-  promoted 3-bit layer files, 53 GB) is only on the reference machine. Once it is on the Hub, `PLUS_REPO=<repo>
-  ./start.sh` is the whole install; until then `scripts/aplus/` rebuilds it (2×H200, ~4 h; ~20 h on the Spark).
+- **Kalibrated pack on the Hub** — upload of the ready-to-serve directory (tp1/ + dspark-draft-k64/, 106 GB) to
+  `GaelicThunder/DeepSeek-V4-Flash-Vision-Exp-ablit-EXL3-Kalibrated` in progress on 2026-09-07; `./start.sh` already
+  points at it. Until it is public, `PACK=mixedk ./start.sh` is the working route and `scripts/kalibrated/` rebuilds
+  the pack from the source (2×H200, ~4 h; ~20 h on the Spark).
 - **Choose the 22 layers by measurement, not by proxy.** The current set is the proxy-error ranking; swapping blocks
   of layers (25 min per boot + NLL run) can only improve it. Also test 23–24 layers at a shorter served context.
-- **Retrain the DSpark draft against A+.** τ is 3.66 on code / 1.88 on prose; the target changed, the draft did not.
+- **Retrain the DSpark draft against Kalibrated.** τ is 3.66 on code / 1.88 on prose; the target changed, the draft did not.
 
 - **Close the `)Skip` root cause.** The mask in `scripts/badwords_proxy.py` hides it; it does not fix it. One boot
   with `MODE=mtp0` says whether the corruption needs the speculative verify block at all, then swap one decode-only
@@ -17,9 +18,6 @@
   target's distribution should close most of the 35→46 tok/s gap.
 - **Multi-image prompts and tool calls with images** — untested. The vision-prefill row-width issue vcruz305 patched in
   FlashInfer does not apply to this attention path in theory; check in practice with several images per prompt.
-- **A RAM watchdog in the repo.** Serving on unified memory below ~1 GB `MemAvailable` can hard-lock the box; the one
-  used during these measurements lives in the operator's tooling, not here. A 20-line `ramwatch.sh` that kills the
-  container under a floor belongs in `scripts/`.
 - **Salt the needle filler** so its timings become usable, then drop the separate long-context timing run.
 - **Try `UTIL=0.90`.** 0.88 leaves ~9 GB of host headroom at 245k; the 3-bit recipe runs at 0.92–0.925 with less
   headroom and survives. More KV pool, or a longer `CTX`.
