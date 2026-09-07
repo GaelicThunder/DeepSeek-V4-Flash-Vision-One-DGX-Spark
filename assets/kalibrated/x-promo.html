@@ -1,0 +1,73 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Kalibrated Vision Exp promo</title>
+<style>
+  :root { --bg:#0e1116; --fg:#e6e9ef; --dim:#8b93a3; --line:#252b36; --acc:#7fd3a4; --acc2:#d9b46a; --red:#e07a6a; --white:#f4f6fa; }
+  html,body { margin:0; background:var(--bg); }
+  body { width:1600px; height:900px; color:var(--fg); font-family:"Fira Code","Cascadia Code","DejaVu Sans Mono",monospace;
+         box-sizing:border-box; padding:42px 72px 30px; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+  body:before { content:""; position:absolute; inset:0; pointer-events:none; background:
+     radial-gradient(1100px 520px at 92% -12%, rgba(127,211,164,.18), transparent 60%),
+     radial-gradient(900px 480px at 2% 108%, rgba(217,180,106,.16), transparent 60%),
+     linear-gradient(180deg, rgba(255,255,255,.015), transparent 40%); }
+  .kicker { font-size:19px; color:var(--dim); letter-spacing:.06em; }
+  .kicker b { color:var(--acc); font-weight:500; }
+  h1 { margin:10px 0 2px; font-size:64px; font-weight:700; letter-spacing:-.025em; line-height:1; }
+  h1 span { color:var(--acc2); }
+  .sub { font-size:20px; color:#c3c9d4; margin:8px 0 0; line-height:1.35; }
+  .sub b { color:var(--white); font-weight:600; }
+  .main { display:grid; grid-template-columns: 1fr 470px; gap:56px; margin-top:18px; flex:1; }
+  .chart { position:relative; border-top:1px solid var(--line); padding-top:16px; }
+  .chart .t { font-size:16px; color:var(--dim); margin-bottom:6px; }
+  .chart .t b { color:var(--fg); font-weight:500; }
+  .groups { display:flex; justify-content:space-between; align-items:flex-end; height:236px; padding:0 8px; position:relative; margin-top:40px; }
+  .groups:before { content:"100 % = the original model"; position:absolute; left:0; right:0; top:-1px; border-top:1.5px solid rgba(230,233,239,.8); font-size:13px; color:var(--fg); text-align:right; padding-top:2px; transform:translateY(-22px); border-top:none; }
+  .groups:after { content:""; position:absolute; left:0; right:0; top:0; border-top:1.5px solid rgba(230,233,239,.8); }
+  .g { display:flex; gap:10px; align-items:flex-end; height:100%; }
+  .bar { width:58px; border-radius:6px 6px 0 0; position:relative; display:flex; align-items:flex-start; justify-content:center; }
+  .bar i { position:absolute; top:-30px; font-style:normal; font-size:19px; font-weight:600; }
+  .bar.k { background:var(--white); } .bar.k i { color:var(--white); }
+  .bar.m { background:var(--acc); } .bar.m i { color:var(--acc); }
+  .bar.r { background:var(--acc2); } .bar.r i { color:var(--acc2); }
+  .labels { display:flex; justify-content:space-between; padding:10px 8px 0; font-size:17px; color:var(--dim); }
+  .labels div { width:194px; text-align:center; }
+  .legend { display:flex; gap:26px; margin-top:12px; font-size:14px; color:var(--dim); }
+  .legend span:before { content:""; display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:8px; vertical-align:-2px; }
+  .legend .k:before { background:var(--white); } .legend .m:before { background:var(--acc); } .legend .r:before { background:var(--acc2); }
+  .stats { display:flex; flex-direction:column; justify-content:space-between; border-top:1px solid var(--line); padding-top:16px; }
+  .stat .n { font-size:42px; font-weight:700; letter-spacing:-.02em; line-height:1; }
+  .stat .n em { font-style:normal; font-size:22px; color:var(--dim); font-weight:400; margin-left:6px; }
+  .stat .l { font-size:15px; color:var(--dim); margin-top:6px; line-height:1.35; }
+  .stat .l b { color:#c3c9d4; font-weight:500; }
+  .foot { margin-top:18px; padding-top:12px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-end; font-size:15px; color:var(--dim); line-height:1.5; }
+  .foot b { color:#c3c9d4; font-weight:500; }
+  code { display:inline-block; white-space:nowrap; background:#161b24; border:1px solid var(--line); border-radius:6px; padding:3px 9px; color:var(--acc); font-size:15px; }
+</style>
+<div class="kicker">DeepSeek-V4-Flash-Vision-Exp (abliterated) · EXL3 · <b>one DGX Spark</b>, GB10, 128 GB · text + images · 245k context</div>
+<h1>Kalibrated Vision Exp <span>— 3-bit where it matters</span></h1>
+<p class="sub">Built on vcruz305's MixedK pack: <b>all 256 experts kept</b>, 22 more expert layers re-quantized at a <b>calibrated 3-bit</b>, picked by measured
+quantization error. <b>Keeps 90 %</b> of the original model's token probability on one GB10, where the 2-bit pack keeps 81 % and the 216-expert 3-bit pack 70 %.</p>
+<div class="main">
+  <div class="chart">
+    <div class="t"><b>Token probability kept of the original-precision model</b> · geometric mean over 64,859 frozen tokens</div>
+    <div class="groups">
+      <div class="g"><div class="bar k" style="height:78.3%"><i>87</i></div><div class="bar m" style="height:60%"><i>76</i></div><div class="bar r" style="height:28.3%"><i>57</i></div></div>
+      <div class="g"><div class="bar k" style="height:99.7%"><i>99.8</i></div><div class="bar m" style="height:90%"><i>94</i></div><div class="bar r" style="height:96.7%"><i>98</i></div></div>
+      <div class="g"><div class="bar k" style="height:86.7%"><i>92</i></div><div class="bar m" style="height:75%"><i>85</i></div><div class="bar r" style="height:90%"><i>94</i></div></div>
+      <div class="g"><div class="bar k" style="height:83.3%"><i>90</i></div><div class="bar m" style="height:68.3%"><i>81</i></div><div class="bar r" style="height:50%"><i>70</i></div></div>
+    </div>
+    <div class="labels"><div>prose · wikitext</div><div>math · gsm8k</div><div>code</div><div>all tokens</div></div>
+    <div class="legend"><span class="k">Kalibrated Vision Exp (this pack)</span><span class="m">MixedK, vcruz305 (2-bit, 6 layers 3-bit)</span><span class="r">REAP-216 3-bit, same model</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n">245,760</div><div class="l">tokens of context per request · KV pool 269k · CUDA graphs on · speculative decoding (DSpark K5)</div></div>
+    <div class="stat"><div class="n">37.6<em>tok/s</em></div><div class="l">decode on code · 34.1 counting · 19.7 free prose with thinking · images 1–3 per prompt</div></div>
+    <div class="stat"><div class="n">−0.133<em>nats</em></div><div class="l">paired vs MixedK on prose (SE 0.005) · −0.062 math · −0.081 code · <b>same tokens, same engine, 22 layers changed</b></div></div>
+    <div class="stat"><div class="n">100<em>GiB</em></div><div class="l">weights resident · 28 s warm load · MMLU-Pro 63.2 % (MixedK 64.3 %: a tie within noise)</div></div>
+  </div>
+</div>
+<div class="foot">
+  <div><b>Install, one command:</b> <code>git clone github.com/GaelicThunder/DeepSeek-V4-Flash-Vision-One-DGX-Spark</code> then <code>./start.sh</code><br>
+  Built on vcruz305's MixedK · DeepSeek · drowzeys · 0xSero (sparkinfer, tp1) · MiaAI-Lab (recipe) · turboderp (EXL3). Receipts for every number in the repo.</div>
+  <div style="text-align:right; white-space:nowrap; padding-left:30px"><b>huggingface.co/GaelicThunder/<br>DeepSeek-V4-Flash-Vision-Exp-ablit-EXL3-Kalibrated</b><br>2026-09-07</div>
+</div>

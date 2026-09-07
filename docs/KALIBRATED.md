@@ -121,7 +121,22 @@ amplifies quantization error — a proxy for where 2-bit hurts most. Kalibrated 
 six layers the MixedK pack already holds at 3-bit); the six MixedK layers sit in the middle of the same ranking, which
 is consistent with them having been chosen by some other rule. Under a linear share of the measured bits gain the 22
 layers were expected to give about −0.05 nats on prose; they gave −0.133, so the ranking is picking sensitive layers
-rather than random ones. Picking them by measurement (swap blocks of layers, one boot each) is the next step.
+rather than random ones.
+
+**Checked by measurement (2026-09-07).** Three trials, each the served 22-layer set with four layers swapped for the
+four converted spares (`33 36 16 6`), one boot each, the same 64,859 tokens, paired against the served set:
+
+| swapped out for the spares | Δ nats, all tokens | prose | math | code | z (token SE) |
+|---|---|---|---|---|---|
+| the four **lowest**-ranked promoted layers, `12 9 0 42` | **−0.001** | −0.001 | −0.003 | −0.001 | −0.7 (noise) |
+| four **mid**-ranked layers, `25 29 8 30` | +0.011 | +0.014 | +0.004 | +0.008 | +4.5 |
+| the **top** four, `27 23 31 35` | +0.017 | +0.025 | +0.011 | +0.002 | +6.9 |
+
+The proxy ranking orders the layers the way the measurement does: the head of the ranking carries the gain, the tail
+is interchangeable with the spares, and the served set is the best of the four measured. Shuffling the tail would gain
+nothing, so the set stays as it is. Receipts: `receipts/nll/nll-swap-{tail,mid,head}-20260907.json` against
+`receipts/nll/nll-aplus22-20260907.json`. Untested: 23–24 promoted layers at a shorter served context (each layer costs
+0.75 GiB of KV pool).
 
 ![layer ranking](../assets/kalibrated/layer_ranking.png)
 
@@ -143,6 +158,23 @@ rather than random ones. Picking them by measurement (swap blocks of layers, one
    `bitrates.json` and the rank-sliced manifest regenerated for that set. No copies: the pack costs 53 GB of disk, once.
 4. **Boot ladder** (`boot_aplus.sh`): try N = 22, 21, 20 at `UTIL=0.925` (never above 0.93 on a 128 GB Spark), then the
    battery: paired NLL vs the 2-bit pack and vs the FP8 reference, the 8-passage perplexity, MMLU-Pro, dsbench.
+
+## 6b. Two levers that were tried on 2026-09-07 and did not move
+
+*Draft depth.* A public result on another model (an NVFP4 drafter trained for depth, draft length 4 → 16, +27 %)
+suggested trying a deeper draft. Here the draft is DSpark: the model's own MTP module chained, trained with a block of
+5. `DSPARK_TOKENS=8` with CUDA graphs captured at 9 tokens loses everywhere against the default 5 — decode 31.3 / 26.6 /
+18.1 tok/s on counting / code / prose against 34.1 / 37.6 / 19.7, acceptance τ 3.21 / 2.84 / 1.94 against 3.26 / 3.65 /
+1.88, verify steps 9.4–9.8 /s against 10.4–10.5 ([`receipts/kalibrated/dsbench-aplus22-k8-20260907.jsonl`](../receipts/kalibrated/dsbench-aplus22-k8-20260907.jsonl)).
+The extra positions are almost never accepted and the wider verify batch costs ~10 % per step; depths under 5 are
+refused by the DSpark validator. The draft stays at 5. Rebuilding the draft from this pack would change nothing: the
+builder copies the `mtp.*` tensors, which Kalibrated leaves as they are in MixedK — only training a draft on this
+target would move τ, and that is a different project.
+
+*`)Skip` and the KV cache.* The remaining suspect for the decode-path token fault was the NVFP4 KV cache read by the
+decode kernels. It cannot be A/B-tested on this stack: the packed MLA layout accepts only `fp8_ds_mla` or
+`nvfp4_ds_mla`, and `fp8_ds_mla` fails at engine init with `swa_k_cache page stride 37376 is smaller than DSV4 page
+width 37440` (the same error as plain `fp8`). The `bad_words` mask stays; `start.sh` applies it through the proxy.
 
 ## 7. Why not the other two routes
 

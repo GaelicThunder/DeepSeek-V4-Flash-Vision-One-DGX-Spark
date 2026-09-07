@@ -4,14 +4,16 @@
   `GaelicThunder/DeepSeek-V4-Flash-Vision-Exp-ablit-EXL3-Kalibrated` in progress on 2026-09-07; `./start.sh` already
   points at it. Until it is public, `PACK=mixedk ./start.sh` is the working route and `scripts/kalibrated/` rebuilds
   the pack from the source (2×H200, ~4 h; ~20 h on the Spark).
-- **Choose the 22 layers by measurement, not by proxy.** The current set is the proxy-error ranking; swapping blocks
-  of layers (25 min per boot + NLL run) can only improve it. Also test 23–24 layers at a shorter served context.
-- **Retrain the DSpark draft against Kalibrated.** τ is 3.66 on code / 1.88 on prose; the target changed, the draft did not.
+- **23–24 promoted layers at a shorter served context.** Each layer costs 0.75 GiB of KV pool; at 245k the pack stops
+  at 22. The layer *choice* is settled by measurement (`docs/KALIBRATED.md` §5: head / middle / tail swaps against the
+  four spares; the ranking holds, nothing to gain from shuffling the tail).
+- **Retrain the DSpark draft against Kalibrated.** τ is 3.66 on code / 1.88 on prose; the target changed, the draft did not. A deeper draft does not help (depth 8 measured worse than 5, `docs/KALIBRATED.md` §6b) and a rebuild from this pack is a no-op (`mtp.*` tensors unchanged): only training moves τ.
 
-- **Close the `)Skip` root cause.** The mask in `scripts/badwords_proxy.py` hides it; it does not fix it. One boot
-  with `MODE=mtp0` says whether the corruption needs the speculative verify block at all, then swap one decode-only
-  kernel at a time (`kv_cache_dtype` off `nvfp4_ds_mla`, the `B12X_MLA_SPARSE` decode path, the small-batch MoE)
-  and re-run `tools/token_leak_probe.py --prefix-text ... --verify-fix` until the decode probability matches the
+- **Close the `)Skip` root cause.** The mask in `scripts/badwords_proxy.py` hides it; it does not fix it. `MODE=mtp0`
+  reproduces it (so the verify block is out); the indexer backend and 16-bit MoE activations leave it bit-identical;
+  the KV-cache dtype cannot be switched on this stack (`fp8_ds_mla` fails on the page stride, §6b of
+  `docs/KALIBRATED.md`). What is left: the `B12X_MLA_SPARSE` decode path itself and the small-batch MoE, one at a time,
+  re-running `tools/token_leak_probe.py --prefix-text ... --verify-fix` until the decode probability matches the
   prefill one. Also worth a pass with `VLLM_COMPUTE_NANS_IN_LOGITS=1`.
 - **Retrain the DSpark draft against this target.** τ is 3.2 on code vs 4.1 for the 3-bit recipe with a draft built
   the same way; the engine itself is faster (11.0 vs 10.3 verify steps/s). A draft that has seen the 256-expert 2-bit
